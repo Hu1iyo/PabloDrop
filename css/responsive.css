@@ -1,0 +1,54 @@
+@media (max-width: 900px) {
+    .upgrade-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .upgrade-center {
+        order: -1;
+    }
+    .upgrade-bottom {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .upgrade-info {
+        flex-direction: column;
+        width: 100%;
+    }
+    .btn-upgrade {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-inner { padding: 0 15px; gap: 15px; }
+    .nav { display: none; }
+    .cases-grid { padding: 0 15px 40px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .page-opening { padding: 15px; }
+    .roulette-item { width: 100px; height: 100px; }
+    .btn-open { padding: 14px 30px; font-size: 16px; }
+    .showcase-item { width: 110px; height: 110px; }
+    .page-inventory { padding: 20px 15px 40px; }
+    .inventory-header { flex-direction: column; align-items: flex-start; }
+    .inventory-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .quantity-selector { flex-direction: column; gap: 8px; }
+    .qty-btn { padding: 6px 12px; font-size: 13px; }
+    .page-upgrade { padding: 20px 15px 40px; }
+}
+
+@media (max-width: 768px) {
+    .category-section {
+        padding: 25px 15px 15px;
+    }
+    .category-title {
+        font-size: 14px;
+        letter-spacing: 2px;
+    }
+    .cases-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+    .case-image {
+        height: 110px;
+        font-size: 42px;
+    }
+}
