@@ -1,0 +1,10 @@
+{
+  "name": "pablodrop",
+  "version": "1.0.0",
+  "description": "PABLOdrop — сайт открытия кейсов (запуск через Node.js)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT"
+}
