@@ -5,7 +5,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 3000;
+// Запуск: node server.js [порт]  (или npm start, или npm start -- 8080)
+// Порт можно задать третьим аргументом командной строки или переменной PORT.
+const PORT = Number(process.argv[2]) || Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 
 const MIME_TYPES = {
@@ -68,6 +70,16 @@ const server = http.createServer((req, res) => {
         });
         stream.pipe(res);
     });
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Порт ${PORT} уже занят. Закройте другое приложение или запустите с другим портом:`);
+        console.error(`  node server.js 8080`);
+    } else {
+        console.error('Ошибка сервера:', err.message);
+    }
+    process.exit(1);
 });
 
 server.listen(PORT, () => {
