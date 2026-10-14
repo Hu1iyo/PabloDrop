@@ -1,11 +1,11 @@
 function openSellModal(itemId) {
-    const inv = getInventory();
+    const inv = getInventory().map(getMarketSkin);
     const item = inv.find(i => i.id === itemId);
-    if (!item) return;
+    if (!item || !isMarketPriceAvailable(item)) return;
     pendingSellItem = item;
     modalItem.textContent = getDisplaySkinName(item.name);
     modalItem.style.color = RARITY_COLORS[item.rarity];
-    modalPrice.textContent = item.price;
+    modalPrice.textContent = formatMoney(item.price);
     sellModal.style.display = 'flex';
 }
 
@@ -20,10 +20,17 @@ sellModal.querySelector('.modal-backdrop').addEventListener('click', closeSellMo
 
 modalConfirm.addEventListener('click', () => {
     if (!pendingSellItem) return;
-    balance += pendingSellItem.price;
+    const currentItem = getInventory()
+        .map(getMarketSkin)
+        .find(item => item.id === pendingSellItem.id);
+    if (!currentItem || !isMarketPriceAvailable(currentItem)) {
+        closeSellModal();
+        return;
+    }
+    balance += currentItem.price;
     updateBalance();
-    removeFromInventory(pendingSellItem.id);
-    upgradeSourceItems = upgradeSourceItems.filter(i => i.id !== pendingSellItem.id);
+    removeFromInventory(currentItem.id);
+    upgradeSourceItems = upgradeSourceItems.filter(i => i.id !== currentItem.id);
     if (currentPage === 'upgrade') updateUpgradeUI();
     closeSellModal();
     renderInventory();

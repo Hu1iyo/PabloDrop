@@ -5,10 +5,14 @@ renderShowcase();
 renderCases();
 updateBalance();
 
-refreshMarketData().then(updated => {
-	if (!updated) return;
+async function refreshMarketViews() {
+	await refreshMarketData();
 	renderShowcase();
 	renderCases();
 	if (currentPage === 'inventory') renderInventory();
 	if (currentPage === 'upgrade') updateUpgradeUI();
-}).catch(() => {});
+	if (currentCase) refreshOpeningMarketPrices();
+}
+
+refreshMarketViews();
+setInterval(refreshMarketViews, 5 * 60 * 1000);

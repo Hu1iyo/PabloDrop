@@ -15,14 +15,17 @@ function getShopSkins() {
 function findBestSkin(targetPrice) {
     const shop = getShopSkins();
     const sourceTotal = upgradeSourceItems.reduce((s, i) => s + i.price, 0);
-    const candidates = shop.filter(s => s.price > sourceTotal);
+    const candidates = shop.filter(s => isMarketPriceAvailable(s) && s.price > sourceTotal);
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => Math.abs(a.price - targetPrice) - Math.abs(b.price - targetPrice));
     return candidates[0];
 }
 
 function updateUpgradeUI() {
+    upgradeSourceItems = upgradeSourceItems.map(getMarketSkin);
     const sourceTotal = upgradeSourceItems.reduce((s, i) => s + i.price, 0);
+    const hasPricedSources = upgradeSourceItems.length > 0
+        && upgradeSourceItems.every(isMarketPriceAvailable);
 
     if (upgradeSourceItems.length === 0) {
         slotSourceContent.innerHTML = `
@@ -56,7 +59,7 @@ function updateUpgradeUI() {
         infoSource.textContent = `${sourceTotal} ₽ (${upgradeSourceItems.length} шт.)`;
     }
 
-    if (sourceTotal > 0) {
+    if (hasPricedSources && sourceTotal > 0) {
         let targetPrice;
         if (selectedChance) {
             targetPrice = sourceTotal / ((selectedChance / 100) / (1 - HOUSE_EDGE));
@@ -120,7 +123,7 @@ function updateUpgradeUI() {
     document.querySelectorAll('.mult-btn, .quick-btn').forEach(button => {
         button.disabled = isUpgrading;
     });
-    btnUpgrade.disabled = isUpgrading || !upgradeTarget || upgradeSourceItems.length === 0;
+    btnUpgrade.disabled = isUpgrading || !upgradeTarget || !hasPricedSources;
 }
 
 function renderUpgradeSlots() {

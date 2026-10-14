@@ -41,7 +41,15 @@
     font-weight: 500;
 }
 
-.market-price-estimate small { color: var(--red); }
+.market-price-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.market-price-link:hover { text-decoration: underline; }
+
+.market-price-unavailable { color: var(--text-dim); }
+.market-price-unavailable small { color: var(--red); }
 
 .showcase-item .skin-art {
     width: 116px;

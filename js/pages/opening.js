@@ -4,6 +4,24 @@ function updateOpenButtonPrice() {
     if (!currentCase) return;
     const total = currentCase.price * openQuantity;
     openPrice.textContent = formatMoney(total) + ' ₽';
+    const hasPricedDrops = currentCase.items.some(isMarketPriceAvailable);
+    openBtn.disabled = isSpinning || !hasPricedDrops;
+    openBtn.title = hasPricedDrops ? '' : 'Открытие недоступно: нет свежих рыночных котировок';
+}
+
+function refreshOpeningMarketPrices() {
+    if (!currentCase) return;
+    contentsGrid.innerHTML = currentCase.items.map(item => `
+        <div class="content-item">
+            ${skinImageMarkup(item, 'skin-art')}
+            <div class="content-item-name">${getDisplaySkinName(item.name)}</div>
+            ${marketPriceMarkup(item, 'content-item-price')}
+        </div>
+    `).join('');
+    document.querySelectorAll('.content-item').forEach((element, index) => {
+        element.style.borderTop = `3px solid ${RARITY_COLORS[currentCase.items[index].rarity]}`;
+    });
+    updateOpenButtonPrice();
 }
 
 document.querySelectorAll('.qty-btn').forEach(btn => {
@@ -29,17 +47,7 @@ function openCasePage(caseId) {
     document.querySelector('.qty-btn[data-qty="1"]').classList.add('active');
     updateOpenButtonPrice();
 
-    contentsGrid.innerHTML = currentCase.items.map(item => `
-        <div class="content-item">
-            ${skinImageMarkup(item, 'skin-art')}
-            <div class="content-item-name">${getDisplaySkinName(item.name)}</div>
-            ${marketPriceMarkup(item, 'content-item-price')}
-        </div>
-    `).join('');
-
-    document.querySelectorAll('.content-item').forEach((el, i) => {
-        el.style.borderTop = `3px solid ${RARITY_COLORS[currentCase.items[i].rarity]}`;
-    });
+    refreshOpeningMarketPrices();
 
     pageCases.style.display = 'none';
     showcaseSection.style.display = 'none';
@@ -64,6 +72,15 @@ function goHome() {
 openBtn.addEventListener('click', () => {
     if (isSpinning) return;
     if (!currentCase) return;
+    const pricedItems = currentCase.items.filter(isMarketPriceAvailable);
+    if (pricedItems.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="result-box">
+                <div class="result-item" style="color:#ff4757;">Нет свежих котировок Skinport для предметов этого кейса.</div>
+            </div>
+        `;
+        return;
+    }
 
     const totalPrice = currentCase.price * openQuantity;
 
@@ -85,7 +102,7 @@ openBtn.addEventListener('click', () => {
 
     const winningItems = [];
     for (let i = 0; i < openQuantity; i++) {
-        winningItems.push(getRandomItemAdjusted(currentCase.items, currentCase.price));
+        winningItems.push(getRandomItemAdjusted(pricedItems, currentCase.price));
     }
 
     const roulettes = [];
@@ -106,7 +123,7 @@ openBtn.addEventListener('click', () => {
         rouletteMulti.appendChild(wrapper);
 
         const track = wrapper.querySelector('.roulette-track');
-        const rouletteItems = generateRouletteItems(winningItems[i], currentCase.items);
+        const rouletteItems = generateRouletteItems(winningItems[i], pricedItems);
         rouletteItems.forEach(item => track.appendChild(createRouletteItem(item)));
 
         roulettes.push({ wrapper, track, winningItem: winningItems[i] });
@@ -129,7 +146,7 @@ openBtn.addEventListener('click', () => {
     const totalDuration = 6200 + (openQuantity - 1) * 200;
     setTimeout(() => {
         isSpinning = false;
-        openBtn.disabled = false;
+        updateOpenButtonPrice();
 
         winningItems.forEach(item => addToInventory(item));
 

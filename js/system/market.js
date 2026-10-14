@@ -1,18 +1,33 @@
 const SKIN_MARKET_STORAGE_KEY = 'pabloSkinMarketCache';
+const SKIN_MARKET_MAX_AGE_MS = 5 * 60 * 1000;
 const SKIN_MARKET_DATA = {};
+let skinMarketFeedAvailable = false;
 
 function getDisplaySkinName(name) {
     return name.replace(/\s*(?:\(Factory New\)|FN)$/i, '');
 }
 
+function isMarketPriceAvailable(item) {
+    return Boolean(item)
+        && Number.isFinite(item.price)
+        && item.price > 0
+        && item.marketPriceAvailable === true;
+}
+
 function getMarketSkin(item) {
     const market = SKIN_MARKET_DATA[item.name];
-    if (!market) return { ...item, marketPriceAvailable: false };
+    if (!market) {
+        return {
+            ...item,
+            price: null,
+            priceFeedAvailable: skinMarketFeedAvailable,
+            marketPriceAvailable: false,
+        };
+    }
 
     return {
         ...item,
-        price: Number.isFinite(market.price) ? market.price : item.catalogPrice ?? item.price,
-        catalogPrice: item.catalogPrice ?? item.price,
+        price: Number.isFinite(market.price) && market.price > 0 ? market.price : null,
         image: market.image || item.image || null,
         imageIsExact: market.imageIsExact !== false,
         imageSourceName: market.imageSourceName || item.imageSourceName || null,
@@ -21,12 +36,14 @@ function getMarketSkin(item) {
         marketName: market.marketName,
         marketUrl: market.marketUrl,
         marketPriceUpdatedAt: market.priceUpdatedAt,
-        marketPriceAvailable: Number.isFinite(market.price),
+        marketPriceAvailable: Number.isFinite(market.price) && market.price > 0,
     };
 }
 
 function applyMarketSnapshot(snapshot) {
+    Object.keys(SKIN_MARKET_DATA).forEach(name => delete SKIN_MARKET_DATA[name]);
     Object.assign(SKIN_MARKET_DATA, snapshot.items || {});
+    skinMarketFeedAvailable = snapshot.pricesAvailable === true;
     CASES.forEach(caseItem => {
         caseItem.items = caseItem.items.map(getMarketSkin);
     });
@@ -37,10 +54,23 @@ function applyMarketSnapshot(snapshot) {
     }
 }
 
+function isFreshMarketSnapshot(snapshot) {
+    const updatedAt = Date.parse(snapshot?.updatedAt || '');
+    return Number.isFinite(updatedAt)
+        && updatedAt <= Date.now()
+        && Date.now() - updatedAt < SKIN_MARKET_MAX_AGE_MS
+        && snapshot.items
+        && typeof snapshot.items === 'object'
+        && !Array.isArray(snapshot.items);
+}
+
 function applyCachedMarketData() {
     try {
         const cached = JSON.parse(localStorage.getItem(SKIN_MARKET_STORAGE_KEY));
-        if (!cached || !cached.items) return false;
+        if (!isFreshMarketSnapshot(cached)) {
+            localStorage.removeItem(SKIN_MARKET_STORAGE_KEY);
+            return false;
+        }
         applyMarketSnapshot(cached);
         return true;
     } catch {
@@ -56,19 +86,28 @@ async function refreshMarketData() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ names }),
         });
-        if (!response.ok) throw new Error('Market data unavailable');
+        if (!response.ok) throw new Error(`Skinport market data unavailable (${response.status})`);
 
         const snapshot = await response.json();
+        if (!isFreshMarketSnapshot(snapshot)) {
+            throw new Error('Skinport returned an invalid or stale market snapshot');
+        }
         const cache = {
             items: snapshot.items || {},
+            pricesAvailable: snapshot.pricesAvailable === true,
             updatedAt: snapshot.updatedAt,
         };
-        localStorage.setItem(SKIN_MARKET_STORAGE_KEY, JSON.stringify(cache));
         applyMarketSnapshot(cache);
+        try {
+            localStorage.setItem(SKIN_MARKET_STORAGE_KEY, JSON.stringify(cache));
+        } catch (error) {
+            console.warn('Не удалось сохранить кеш рыночных цен:', error);
+        }
 
         return true;
-    } catch {
-        applyCachedMarketData();
+    } catch (error) {
+        console.warn('Не удалось обновить рыночные цены:', error);
+        if (!applyCachedMarketData()) applyMarketSnapshot({ items: {} });
         return false;
     }
 }
@@ -92,10 +131,34 @@ function skinImageMarkup(item, className = 'skin-art') {
 }
 
 function marketPriceMarkup(item, className = 'skin-market-price') {
-    const price = Number(item.price) || 0;
-    if (!item.marketPriceAvailable) {
-        const note = item.priceFeedAvailable === false ? '<small>рынок недоступен</small>' : '';
-        return `<span class="${className} market-price-estimate">≈ ${formatMoney(price)} ₽${note}</span>`;
+    if (!isMarketPriceAvailable(item)) {
+        const note = item.priceFeedAvailable === false ? 'Skinport недоступен' : 'нет котировки';
+        return `<span class="${className} market-price-unavailable">Цена недоступна<small>${note}</small></span>`;
     }
-    return `<span class="${className}">${formatMoney(price)} ₽</span>`;
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character]);
+    const wear = item.marketWear ? `Skinport · ${escapeHtml(item.marketWear)}` : 'Skinport';
+    const updatedAt = item.marketPriceUpdatedAt
+        ? `Котировка обновлена ${new Date(item.marketPriceUpdatedAt).toLocaleString('ru-RU')}`
+        : 'Актуальная котировка Skinport';
+    const content = `${formatMoney(item.price)} ₽<small>${wear}</small>`;
+    if (!item.marketUrl) {
+        return `<span class="${className}" title="${updatedAt}">${content}</span>`;
+    }
+    if (!/^https:\/\/skinport\.com\//i.test(item.marketUrl)) {
+        return `<span class="${className}" title="${updatedAt}">${content}</span>`;
+    }
+    const marketUrl = String(item.marketUrl).replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character]);
+    return `<a class="${className} market-price-link" href="${marketUrl}" target="_blank" rel="noopener noreferrer" title="${updatedAt}">${content}</a>`;
 }

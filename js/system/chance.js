@@ -14,6 +14,7 @@ const BASE_CHANCES = {
 function calculateExpectedValue(items) {
     let ev = 0;
     items.forEach(item => {
+        if (!isMarketPriceAvailable(item)) return;
         const chance = BASE_CHANCES[item.rarity] || 0.01;
         ev += item.price * chance;
     });
@@ -53,7 +54,9 @@ function normalizeChances(items) {
 }
 
 function getRandomItemAdjusted(items, casePrice) {
-    const adjustedItems = normalizeChances(adjustChances(items, casePrice));
+    const pricedItems = items.filter(isMarketPriceAvailable);
+    if (pricedItems.length === 0) return null;
+    const adjustedItems = normalizeChances(adjustChances(pricedItems, casePrice));
     const rand = Math.random();
     let cumulative = 0;
     for (const item of adjustedItems) {

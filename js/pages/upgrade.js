@@ -33,7 +33,7 @@ function renderSkinSelectGrid(filter = '') {
                 <button type="button" class="skin-option ${isSelected ? 'selected' : ''}"
                      aria-pressed="${isSelected}"
                  data-name="${s.name}" data-price="${marketSkin.price}" data-rarity="${s.rarity}"
-                     data-id="${s.id}" ${isUpgrading ? 'disabled' : ''}>
+                     data-id="${s.id}" ${isUpgrading || !isMarketPriceAvailable(marketSkin) ? 'disabled' : ''}>
                 ${skinImageMarkup(marketSkin, 'skin-art')}
                 <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
                 ${marketPriceMarkup(marketSkin, 'skin-option-price')}
@@ -48,16 +48,15 @@ function renderSkinSelectGrid(filter = '') {
 }
 
 function selectSkin(opt) {
-    const name = opt.dataset.name;
-    const price = parseFloat(opt.dataset.price);
-    const rarity = opt.dataset.rarity;
     const id = Number(opt.dataset.id);
+    const item = getInventory().map(getMarketSkin).find(inventoryItem => inventoryItem.id === id);
+    if (!item || !isMarketPriceAvailable(item)) return;
 
     const existing = upgradeSourceItems.find(i => i.id === id);
     if (existing) {
         upgradeSourceItems = upgradeSourceItems.filter(i => i.id !== id);
     } else {
-        upgradeSourceItems.push(getMarketSkin({ name, price, rarity, id }));
+        upgradeSourceItems.push(item);
     }
 
     updateUpgradeUI();
@@ -109,7 +108,11 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
 
 btnUpgrade.addEventListener('click', () => {
     if (isUpgrading) return;
-    if (upgradeSourceItems.length === 0 || !upgradeTarget) return;
+    upgradeSourceItems = upgradeSourceItems.map(getMarketSkin);
+    upgradeTarget = upgradeTarget ? getMarketSkin(upgradeTarget) : null;
+    if (upgradeSourceItems.length === 0
+        || !upgradeSourceItems.every(isMarketPriceAvailable)
+        || !isMarketPriceAvailable(upgradeTarget)) return;
 
     const inv = getInventory();
     upgradeSourceItems.forEach(src => {
@@ -141,9 +144,7 @@ btnUpgrade.addEventListener('click', () => {
 
         if (won) {
             addToInventory({
-                name: upgradeTarget.name,
-                price: upgradeTarget.price,
-                rarity: upgradeTarget.rarity
+                ...upgradeTarget
             });
             upgradeResult.style.display = 'block';
             upgradeResult.className = 'upgrade-result win';

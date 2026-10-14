@@ -16,10 +16,30 @@ const scrypt = promisify(crypto.scrypt);
 let registrationQueue = Promise.resolve();
 const SKIN_CATALOG_URL = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json';
 const SKINPORT_PRICES_URL = 'https://api.skinport.com/v1/items?app_id=730&currency=RUB';
-const SKIN_MARKET_CACHE_MS = 30 * 60 * 1000;
+const SKIN_MARKET_CACHE_MS = 5 * 60 * 1000;
 let skinMarketCache = null;
 let skinMarketCacheExpiresAt = 0;
 let skinMarketRequest = null;
+
+function parseRequestedSkinName(name) {
+    const wearAliases = new Map([
+        ['factory new', 'Factory New'],
+        ['minimal wear', 'Minimal Wear'],
+        ['field-tested', 'Field-Tested'],
+        ['well-worn', 'Well-Worn'],
+        ['battle-scarred', 'Battle-Scarred'],
+        ['fn', 'Factory New'],
+        ['mw', 'Minimal Wear'],
+        ['ft', 'Field-Tested'],
+        ['ww', 'Well-Worn'],
+        ['bs', 'Battle-Scarred'],
+    ]);
+    const wearPattern = /\s+(Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred|FN|MW|FT|WW|BS)$/i;
+    const match = name.match(wearPattern);
+    const wear = match ? wearAliases.get(match[1].toLocaleLowerCase()) : null;
+    const baseName = match ? name.slice(0, match.index).trim() : name;
+    return { baseName, wear };
+}
 
 async function readUsers() {
     await fs.promises.mkdir(path.dirname(USERS_FILE), { recursive: true });
@@ -69,8 +89,12 @@ async function loadSkinMarketSources() {
     const [catalogResponse, prices] = await Promise.all([
         fetch(SKIN_CATALOG_URL, { signal: AbortSignal.timeout(30000) }),
         fetch(SKINPORT_PRICES_URL, { signal: AbortSignal.timeout(30000) })
-            .then(response => response.ok ? response.json() : [])
-            .catch(() => []),
+            .then(async response => {
+                if (!response.ok) throw new Error(`Skinport returned ${response.status}`);
+                const items = await response.json();
+                if (!Array.isArray(items)) throw new Error('Skinport returned an invalid price list');
+                return items;
+            }),
     ]);
     if (!catalogResponse.ok) {
         throw new Error(`Skin catalog returned ${catalogResponse.status}`);
@@ -136,9 +160,10 @@ async function handleSkinMarketRequest(req, res) {
         const items = {};
 
         for (const name of names) {
-            const normalizedName = name.replace(/^★\s*/, '').toLocaleLowerCase();
+            const { baseName, wear: requestedWear } = parseRequestedSkinName(name);
+            const normalizedName = baseName.replace(/^★\s*/, '').toLocaleLowerCase();
             const skin = skinsByName.get(normalizedName);
-            const weaponName = name.split('|')[0].replace(/^★\s*/, '').trim();
+            const weaponName = baseName.split('|')[0].replace(/^★\s*/, '').trim();
             const imageSkin = skin || skinsByWeapon.get(weaponName.toLocaleLowerCase());
             if (!imageSkin) continue;
 
@@ -153,8 +178,10 @@ async function handleSkinMarketRequest(req, res) {
                     listing: pricesByName.get(`${skin.name} (${wear.name})`),
                 }))
                 .filter(option => option.listing && Number.isFinite(option.listing.min_price) && option.listing.min_price > 0);
-            const selected = listings.find(option => option.wear === 'Field-Tested')
-                || listings.sort((a, b) => (b.listing.quantity || 0) - (a.listing.quantity || 0))[0];
+            const selected = requestedWear
+                ? listings.find(option => option.wear === requestedWear)
+                : listings.find(option => option.wear === 'Field-Tested')
+                    || listings.sort((a, b) => (b.listing.quantity || 0) - (a.listing.quantity || 0))[0];
 
             items[name] = {
                 image: imageSkin.image || null,
@@ -172,8 +199,9 @@ async function handleSkinMarketRequest(req, res) {
             };
         }
 
-        sendJson(res, 200, { items, updatedAt });
+        sendJson(res, 200, { items, pricesAvailable, updatedAt });
     } catch (error) {
+        console.error('Не удалось загрузить рыночные данные скинов:', error.message);
         sendJson(res, 503, { error: 'Не удалось загрузить рыночные данные скинов' });
     }
 }
