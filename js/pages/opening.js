@@ -1,3 +1,5 @@
+let casesScrollPosition = 0;
+
 function updateOpenButtonPrice() {
     if (!currentCase) return;
     const total = currentCase.price * openQuantity;
@@ -18,6 +20,7 @@ function openCasePage(caseId) {
     currentCase = CASES.find(c => c.id === caseId);
     if (!currentCase) return;
 
+    casesScrollPosition = window.scrollY;
     caseTitle.textContent = currentCase.name;
     casePrice.textContent = currentCase.price + ' ₽';
     caseEmoji.innerHTML = caseArtworkMarkup(currentCase, 'opening');
@@ -55,6 +58,7 @@ function goHome() {
     currentCase = null;
     rouletteMulti.innerHTML = '';
     resultsContainer.innerHTML = '';
+    window.scrollTo(0, casesScrollPosition);
 }
 
 openBtn.addEventListener('click', () => {
