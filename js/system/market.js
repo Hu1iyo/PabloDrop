@@ -33,22 +33,11 @@ function applyMarketSnapshot(snapshot) {
     }
 }
 
-function setMarketStatus(message, state = '') {
-    const status = document.getElementById('market-status');
-    if (!status) return;
-    status.textContent = message;
-    status.dataset.state = state;
-}
-
 function applyCachedMarketData() {
     try {
         const cached = JSON.parse(localStorage.getItem(SKIN_MARKET_STORAGE_KEY));
         if (!cached || !cached.items) return false;
         applyMarketSnapshot(cached);
-        setMarketStatus(
-            `Рынок Skinport · ₽ · обновлено ${new Date(cached.updatedAt).toLocaleString('ru-RU')}`,
-            'cached'
-        );
         return true;
     } catch {
         return false;
@@ -69,26 +58,13 @@ async function refreshMarketData() {
         const cache = {
             items: snapshot.items || {},
             updatedAt: snapshot.updatedAt,
-            pricesAvailable: snapshot.items && Object.values(snapshot.items).some(item => item.priceFeedAvailable),
         };
         localStorage.setItem(SKIN_MARKET_STORAGE_KEY, JSON.stringify(cache));
         applyMarketSnapshot(cache);
 
-        const pricedCount = Object.values(cache.items).filter(item => Number.isFinite(item.price)).length;
-        const statusText = cache.pricesAvailable
-            ? `Рынок Skinport · ₽ · цены доступны для ${pricedCount} из ${names.length} скинов`
-            : `Каталог изображений · картинки доступны для ${Object.values(cache.items).filter(item => item.image).length} из ${names.length} скинов · цены Skinport временно недоступны`;
-        setMarketStatus(
-            `${statusText} · обновлено ${new Date(cache.updatedAt).toLocaleString('ru-RU')}`,
-            cache.pricesAvailable && pricedCount === names.length ? 'ready' : 'partial'
-        );
         return true;
     } catch {
-        const hasCache = applyCachedMarketData();
-        setMarketStatus(
-            hasCache ? 'Skinport временно недоступен · показаны сохранённые рыночные данные' : 'Skinport временно недоступен · показаны цены каталога',
-            'offline'
-        );
+        applyCachedMarketData();
         return false;
     }
 }
@@ -106,7 +82,7 @@ function skinImageMarkup(item, className = 'skin-art') {
     const image = `<img class="skin-art-image" src="${imageUrl}" alt="" loading="lazy" decoding="async">`;
     if (item.imageIsExact === false) {
         const sourceName = escapeHtml(item.imageSourceName || item.name.split('|')[0].trim());
-        return `<span class="${className} skin-art-fallback" title="Точного изображения нет; показано оружие: ${sourceName}">${image}<small class="skin-art-note">Изображение оружия</small></span>`;
+        return `<span class="${className} skin-art-fallback" title="Точного изображения нет; показано оружие: ${sourceName}">${image}</span>`;
     }
     return `<img class="${className} skin-art-image" src="${imageUrl}" alt="" loading="lazy" decoding="async">`;
 }
@@ -114,8 +90,8 @@ function skinImageMarkup(item, className = 'skin-art') {
 function marketPriceMarkup(item, className = 'skin-market-price') {
     const price = Number(item.price) || 0;
     if (!item.marketPriceAvailable) {
-        const note = item.priceFeedAvailable === false ? 'рынок недоступен' : 'нет листинга';
-        return `<span class="${className} market-price-estimate">≈ ${formatMoney(price)} ₽<small>${note}</small></span>`;
+        const note = item.priceFeedAvailable === false ? '<small>рынок недоступен</small>' : '';
+        return `<span class="${className} market-price-estimate">≈ ${formatMoney(price)} ₽${note}</span>`;
     }
     const wear = item.marketWear ? `<small>${item.marketWear}</small>` : '';
     return `<span class="${className}">${formatMoney(price)} ₽${wear}</span>`;
