@@ -1,0 +1,171 @@
+.market-status {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 10px 30px;
+    color: var(--text-dim);
+    font-size: 12px;
+}
+
+.market-status[data-state="ready"] { color: var(--green); }
+.market-status[data-state="partial"] { color: var(--accent); }
+.market-status[data-state="offline"] { color: var(--red); }
+
+.skin-art {
+    display: block;
+    flex: 0 0 auto;
+    object-fit: contain;
+    object-position: center;
+    max-width: 100%;
+}
+
+.skin-art-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.skin-art-fallback {
+    position: relative;
+    overflow: hidden;
+}
+
+.skin-art-note {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    left: 2px;
+    overflow: hidden;
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: rgba(10, 13, 18, 0.82);
+    color: var(--text-dim);
+    font-size: 8px;
+    line-height: 1.2;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.skin-art-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.skin-market-price {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.skin-market-price small {
+    color: var(--text-dim);
+    font-size: 9px;
+    font-weight: 500;
+}
+
+.market-price-estimate small { color: var(--red); }
+
+.showcase-item .skin-art {
+    width: 116px;
+    height: 68px;
+    margin-bottom: 4px;
+}
+
+.showcase-item {
+    height: 160px;
+}
+
+.showcase-item-price {
+    font-size: 12px;
+}
+
+.roulette-item .skin-art {
+    width: 100px;
+    height: 44px;
+    margin-bottom: 3px;
+}
+
+.roulette-item .roulette-item-price {
+    font-size: 11px;
+}
+
+.roulette-item .skin-market-price small { font-size: 8px; }
+
+.content-item .skin-art {
+    width: 100%;
+    height: 82px;
+    margin-bottom: 8px;
+}
+
+.content-item .content-item-price {
+    margin: 0;
+}
+
+.inventory-item .skin-art {
+    width: 100%;
+    height: 100px;
+    margin: 0 auto 10px;
+}
+
+.inventory-item .inv-item-price {
+    margin-bottom: 12px;
+}
+
+.skin-option .skin-art {
+    width: 100%;
+    height: 76px;
+    margin: 0 auto 8px;
+}
+
+.skin-option .skin-option-price {
+    margin: 0 0 4px;
+}
+
+.slot-selected-item {
+    grid-template-columns: 34px minmax(0, 1fr) auto 30px;
+}
+
+.slot-selected-art {
+    width: 34px;
+    height: 28px;
+}
+
+.slot-selected-price small {
+    font-size: 8px;
+}
+
+.slot-target-art {
+    width: min(100%, 190px);
+    height: 120px;
+}
+
+.slot-item-price small {
+    display: block;
+    margin-top: 3px;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.result-item-art {
+    width: 120px;
+    height: 72px;
+    margin: 0 auto 8px;
+}
+
+.result-item-price {
+    display: inline-flex;
+    flex-direction: column;
+    color: var(--accent);
+}
+
+@media (max-width: 768px) {
+    .market-status { padding: 9px 15px; }
+}

@@ -72,7 +72,7 @@ authTabs.forEach(tab => {
 });
 
 // Вход
-loginForm.addEventListener('submit', (e) => {
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
@@ -82,7 +82,7 @@ loginForm.addEventListener('submit', (e) => {
         return;
     }
 
-    const result = loginUser(username, password);
+    const result = await loginUser(username, password);
     if (result.success) {
         closeAuthModal();
         updateAuthUI();
@@ -92,13 +92,14 @@ loginForm.addEventListener('submit', (e) => {
 });
 
 // Регистрация
-registerForm.addEventListener('submit', (e) => {
+registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
     const password2 = document.getElementById('reg-password2').value;
 
-    if (!username || !password || !password2) {
+    if (!username || !email || !password || !password2) {
         regError.textContent = 'Заполните все поля';
         return;
     }
@@ -108,8 +109,8 @@ registerForm.addEventListener('submit', (e) => {
         return;
     }
 
-    if (password.length < 4) {
-        regError.textContent = 'Пароль должен быть не короче 4 символов';
+    if (password.length < 8) {
+        regError.textContent = 'Пароль должен быть не короче 8 символов';
         return;
     }
 
@@ -118,7 +119,7 @@ registerForm.addEventListener('submit', (e) => {
         return;
     }
 
-    const result = registerUser(username, password);
+    const result = await registerUser(username, email, password);
     if (result.success) {
         closeAuthModal();
         updateAuthUI();

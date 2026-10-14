@@ -291,6 +291,22 @@
     margin-bottom: 15px;
 }
 
+.skin-select-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 14px;
+    color: var(--text-dim);
+    font-size: 13px;
+}
+
+.skin-select-footer .btn-confirm {
+    width: auto;
+    min-width: 110px;
+    padding: 10px 18px;
+}
+
 .tab-btn {
     flex: 1;
     background: var(--bg-surface);
@@ -339,6 +355,8 @@
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
+    color: inherit;
+    font: inherit;
 }
 
 .skin-option::before {
@@ -354,8 +372,13 @@
     transform: translateY(-2px);
 }
 
-.skin-option.disabled {
-    opacity: 0.4;
+.skin-option.selected {
+    border-color: var(--accent);
+    background: rgba(247,201,72,0.1);
+}
+
+.skin-option:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
 }
 

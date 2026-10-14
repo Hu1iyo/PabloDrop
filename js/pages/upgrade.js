@@ -1,4 +1,5 @@
 function openSkinSelectModal() {
+    if (isUpgrading) return;
     skinSelectModal.style.display = 'flex';
     skinSearch.value = '';
     skinModalTitle.textContent = 'Выбери скины из инвентаря';
@@ -7,18 +8,19 @@ function openSkinSelectModal() {
 
 function renderSkinSelectGrid(filter = '') {
     let skins = getInventory().map(i => ({ ...i, fromInventory: true }));
+    const searchTerm = filter.trim().toLowerCase();
 
-    if (filter) {
-        const f = filter.toLowerCase();
-        skins = skins.filter(s => s.name.toLowerCase().includes(f));
+    if (searchTerm) {
+        skins = skins.filter(s => s.name.toLowerCase().includes(searchTerm));
     }
 
+    skinSelectCount.textContent = `Выбрано: ${upgradeSourceItems.length}`;
     if (skins.length === 0) {
         skinSelectGrid.innerHTML = `
             <div style="text-align:center; color:var(--text-dim); padding:40px; grid-column:1/-1;">
-                <div style="font-size:40px; margin-bottom:10px;">📦</div>
-                <div style="font-size:16px; font-weight:700; margin-bottom:5px;">Инвентарь пуст</div>
-                <div style="font-size:13px;">Открой кейсы, чтобы получить скины</div>
+                <div style="font-size:40px; margin-bottom:10px;">${searchTerm ? '🔎' : '📦'}</div>
+                <div style="font-size:16px; font-weight:700; margin-bottom:5px;">${searchTerm ? 'Ничего не найдено' : 'Инвентарь пуст'}</div>
+                <div style="font-size:13px;">${searchTerm ? 'Измени запрос поиска' : 'Открой кейсы, чтобы получить скины'}</div>
             </div>
         `;
         return;
@@ -26,22 +28,22 @@ function renderSkinSelectGrid(filter = '') {
 
     skinSelectGrid.innerHTML = skins.map(s => {
         const isSelected = upgradeSourceItems.some(i => i.id === s.id);
+        const marketSkin = getMarketSkin(s);
         return `
-            <div class="skin-option ${isSelected ? 'disabled' : ''}"
-                 data-name="${s.name}" data-price="${s.price}" data-rarity="${s.rarity}"
-                 data-id="${s.id}">
+                <button type="button" class="skin-option ${isSelected ? 'selected' : ''}"
+                     aria-pressed="${isSelected}"
+                 data-name="${s.name}" data-price="${marketSkin.price}" data-rarity="${s.rarity}"
+                     data-id="${s.id}" ${isUpgrading ? 'disabled' : ''}>
+                ${skinImageMarkup(marketSkin, 'skin-art')}
                 <div class="skin-option-name">${s.name}</div>
-                <div class="skin-option-price">${s.price} ₽</div>
+                ${marketPriceMarkup(marketSkin, 'skin-option-price')}
                 <div class="skin-option-rarity">${RARITY_NAMES[s.rarity]}</div>
-            </div>
+                </button>
         `;
     }).join('');
 
     skinSelectGrid.querySelectorAll('.skin-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            if (opt.classList.contains('disabled')) return;
-            selectSkin(opt);
-        });
+            opt.addEventListener('click', () => selectSkin(opt));
     });
 }
 
@@ -49,22 +51,36 @@ function selectSkin(opt) {
     const name = opt.dataset.name;
     const price = parseFloat(opt.dataset.price);
     const rarity = opt.dataset.rarity;
-    const id = parseFloat(opt.dataset.id);
+    const id = Number(opt.dataset.id);
 
     const existing = upgradeSourceItems.find(i => i.id === id);
     if (existing) {
         upgradeSourceItems = upgradeSourceItems.filter(i => i.id !== id);
     } else {
-        upgradeSourceItems.push({ name, price, rarity, id });
+        upgradeSourceItems.push(getMarketSkin({ name, price, rarity, id }));
     }
 
-    skinSelectModal.style.display = 'none';
     updateUpgradeUI();
+    renderSkinSelectGrid(skinSearch.value);
 }
 
+function closeSkinSelectModal() {
+    skinSelectModal.style.display = 'none';
+}
+
+slotSourceContent.addEventListener('click', (event) => {
+    const removeButton = event.target.closest('[data-remove-source]');
+    if (!removeButton || isUpgrading) return;
+    const itemId = removeButton.dataset.removeSource;
+    upgradeSourceItems = upgradeSourceItems.filter(item => String(item.id) !== itemId);
+    updateUpgradeUI();
+    if (skinSelectModal.style.display === 'flex') renderSkinSelectGrid(skinSearch.value);
+});
+
 btnSelectSource.addEventListener('click', openSkinSelectModal);
-skinModalClose.addEventListener('click', () => skinSelectModal.style.display = 'none');
-skinSelectModal.querySelector('.modal-backdrop').addEventListener('click', () => skinSelectModal.style.display = 'none');
+skinModalClose.addEventListener('click', closeSkinSelectModal);
+skinSelectDone.addEventListener('click', closeSkinSelectModal);
+skinSelectModal.querySelector('.modal-backdrop').addEventListener('click', closeSkinSelectModal);
 skinSearch.addEventListener('input', (e) => renderSkinSelectGrid(e.target.value));
 
 document.querySelectorAll('.mult-btn').forEach(btn => {
@@ -104,6 +120,10 @@ btnUpgrade.addEventListener('click', () => {
 
     isUpgrading = true;
     btnUpgrade.disabled = true;
+    btnSelectSource.disabled = true;
+    document.querySelectorAll('.mult-btn, .quick-btn, .slot-remove-item').forEach(button => {
+        button.disabled = true;
+    });
     btnUpgrade.classList.add('spinning');
     upgradeResult.style.display = 'none';
 

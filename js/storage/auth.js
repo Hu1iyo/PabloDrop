@@ -1,17 +1,6 @@
 // ===== АВТОРИЗАЦИЯ (JSON-хранилище) =====
 const AUTH_KEY = 'pabloUsersDB';
 
-// Простое "хеширование" (не для продакшена, но скрывает пароль от глаз)
-function hashPassword(password) {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-        const char = password.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return 'h_' + Math.abs(hash).toString(36) + '_' + password.length;
-}
-
 // Получить базу пользователей (JSON)
 function getUsersDB() {
     const data = localStorage.getItem(AUTH_KEY);
@@ -28,6 +17,45 @@ function saveUsersDB(db) {
     localStorage.setItem(AUTH_KEY, JSON.stringify(db));
 }
 
+async function requestAuth(endpoint, payload) {
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok) return { success: false, error: result.error || 'Ошибка авторизации' };
+        return { success: true, user: result.user };
+    } catch {
+        return { success: false, error: 'Не удалось подключиться к серверу' };
+    }
+}
+
+function saveAuthenticatedUser(account) {
+    const db = getUsersDB();
+    let user = db.users.find(item => item.id === account.id);
+    if (!user) {
+        user = {
+            id: account.id,
+            username: account.username,
+            email: account.email,
+            balance: 5000,
+            inventory: [],
+            stats: { totalSpent: 0, totalWon: 0, casesOpened: 0 },
+            createdAt: new Date().toISOString(),
+        };
+        db.users.push(user);
+    } else {
+        user.username = account.username;
+        user.email = account.email;
+        delete user.password;
+    }
+    db.currentUserId = account.id;
+    saveUsersDB(db);
+    return user;
+}
+
 // Получить текущего пользователя
 function getCurrentUser() {
     const db = getUsersDB();
@@ -36,49 +64,17 @@ function getCurrentUser() {
 }
 
 // Регистрация
-function registerUser(username, password) {
-    const db = getUsersDB();
-    
-    // Проверка уникальности
-    if (db.users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-        return { success: false, error: 'Пользователь с таким логином уже существует' };
-    }
-
-    const newUser = {
-        id: Date.now(),
-        username: username,
-        password: hashPassword(password),
-        balance: 5000,
-        inventory: [],
-        stats: { totalSpent: 0, totalWon: 0, casesOpened: 0 },
-        createdAt: new Date().toISOString()
-    };
-
-    db.users.push(newUser);
-    db.currentUserId = newUser.id;
-    saveUsersDB(db);
-
-    return { success: true, user: newUser };
+async function registerUser(username, email, password) {
+    const result = await requestAuth('/api/register', { username, email, password });
+    if (!result.success) return result;
+    return { success: true, user: saveAuthenticatedUser(result.user) };
 }
 
 // Вход
-function loginUser(username, password) {
-    const db = getUsersDB();
-    const hashed = hashPassword(password);
-    
-    const user = db.users.find(u => 
-        u.username.toLowerCase() === username.toLowerCase() && 
-        u.password === hashed
-    );
-
-    if (!user) {
-        return { success: false, error: 'Неверный логин или пароль' };
-    }
-
-    db.currentUserId = user.id;
-    saveUsersDB(db);
-
-    return { success: true, user };
+async function loginUser(username, password) {
+    const result = await requestAuth('/api/login', { username, password });
+    if (!result.success) return result;
+    return { success: true, user: saveAuthenticatedUser(result.user) };
 }
 
 // Выход

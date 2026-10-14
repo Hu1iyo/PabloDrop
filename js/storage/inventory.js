@@ -15,6 +15,14 @@ function addToInventory(item) {
         name: item.name,
         price: item.price,
         rarity: item.rarity,
+        image: item.image || null,
+        imageIsExact: item.imageIsExact !== false,
+        imageSourceName: item.imageSourceName || null,
+        marketWear: item.marketWear || null,
+        marketName: item.marketName || null,
+        marketUrl: item.marketUrl || null,
+        marketPriceUpdatedAt: item.marketPriceUpdatedAt || null,
+        marketPriceAvailable: item.marketPriceAvailable === true,
         date: Date.now()
     });
     saveInventory(inv);

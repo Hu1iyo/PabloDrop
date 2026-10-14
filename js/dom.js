@@ -51,7 +51,8 @@ const skinModalClose = document.getElementById('skin-modal-close');
 const skinModalTitle = document.getElementById('skin-modal-title');
 const skinSearch = document.getElementById('skin-search');
 const skinSelectGrid = document.getElementById('skin-select-grid');
-const skinSelectTabs = document.querySelectorAll('.tab-btn');
+const skinSelectCount = document.getElementById('skin-select-count');
+const skinSelectDone = document.getElementById('skin-select-done');
 
 const CIRCUMFERENCE = 2 * Math.PI * 85;
 

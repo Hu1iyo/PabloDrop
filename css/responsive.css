@@ -20,8 +20,30 @@
 }
 
 @media (max-width: 768px) {
-    .header-inner { padding: 0 15px; gap: 15px; }
-    .nav { display: none; }
+    .header-inner {
+        height: auto;
+        min-height: 64px;
+        padding: 8px 15px;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+    }
+    .nav {
+        display: flex;
+        order: 3;
+        flex: 1 0 100%;
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav-link {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    .header-right { gap: 6px; }
+    .balance-box { padding: 6px 9px; gap: 5px; font-size: 12px; }
+    .btn-deposit { padding: 7px 10px; font-size: 12px; }
     .cases-grid { padding: 0 15px 40px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
     .page-opening { padding: 15px; }
     .roulette-item { width: 100px; height: 100px; }
@@ -33,6 +55,17 @@
     .quantity-selector { flex-direction: column; gap: 8px; }
     .qty-btn { padding: 6px 12px; font-size: 13px; }
     .page-upgrade { padding: 20px 15px 40px; }
+}
+
+@media (max-width: 380px) {
+    .header-inner { padding-right: 10px; padding-left: 10px; }
+    .logo { font-size: 20px; }
+    .balance-box { padding: 6px; }
+    .balance-icon { display: none; }
+    .btn-deposit { padding: 7px 8px; }
+    .user-name { display: none; }
+    .user-profile,
+    .user-dropdown { gap: 6px; }
 }
 
 @media (max-width: 768px) {

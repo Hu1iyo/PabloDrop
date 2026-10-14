@@ -52,6 +52,7 @@
             </div>
         </section>
 
+        <div class="market-status" id="market-status" role="status">Загружаем данные рынка Skinport…</div>
         
         <!-- КЕЙСЫ (должна быть!) -->
     <section class="page-cases" id="page-cases">
@@ -289,11 +290,11 @@
             <button class="modal-close" id="skin-modal-close">×</button>
             <h3 class="modal-title" id="skin-modal-title">Выбери скин</h3>
             <input type="text" class="skin-search" id="skin-search" placeholder="🔍 Поиск скина...">
-            <div class="skin-select-tabs">
-                <button class="tab-btn active" data-tab="inventory">🎒 Инвентарь</button>
-                <button class="tab-btn" data-tab="all">🌐 Все скины</button>
-            </div>
             <div class="skin-select-grid" id="skin-select-grid"></div>
+            <div class="skin-select-footer">
+                <span id="skin-select-count">Выбрано: 0</span>
+                <button class="btn-confirm" id="skin-select-done" type="button">Готово</button>
+            </div>
         </div>
     </div>
 
@@ -310,7 +311,7 @@
         <!-- ВХОД -->
         <form class="auth-form" id="login-form">
             <div class="auth-field">
-                <label>Логин</label>
+                <label>Ник</label>
                 <input type="text" id="login-username" placeholder="Введите логин" required>
             </div>
             <div class="auth-field">
@@ -324,12 +325,16 @@
         <!-- РЕГИСТРАЦИЯ -->
         <form class="auth-form" id="register-form" style="display:none;">
             <div class="auth-field">
-                <label>Логин</label>
+                <label>Ник</label>
                 <input type="text" id="reg-username" placeholder="Придумайте логин" minlength="3" required>
             </div>
             <div class="auth-field">
+                <label>Почта</label>
+                <input type="email" id="reg-email" placeholder="Введите почту" maxlength="254" required>
+            </div>
+            <div class="auth-field">
                 <label>Пароль</label>
-                <input type="password" id="reg-password" placeholder="Придумайте пароль" minlength="4" required>
+                <input type="password" id="reg-password" placeholder="Придумайте пароль" minlength="8" maxlength="128" required>
             </div>
             <div class="auth-field">
                 <label>Повторите пароль</label>
@@ -352,6 +357,7 @@
     <script src="js/storage/inventory.js"></script>
     <script src="js/storage/stats.js"></script>
     <script src="js/system/chance.js"></script>
+    <script src="js/system/market.js"></script>
     <script src="js/system/roulette.js"></script>
     <script src="js/system/upgrade.js"></script>
     <script src="js/components/showcase.js"></script>

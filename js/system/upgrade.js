@@ -36,10 +36,20 @@ function updateUpgradeUI() {
         infoSource.textContent = '—';
     } else {
         slotSourceContent.innerHTML = `
-            <div class="slot-item-display">
-                <div class="slot-item-emoji">🎒</div>
-                <div class="slot-item-name">${upgradeSourceItems.length} предмет(ов)</div>
-                <div class="slot-item-price">${sourceTotal} ₽</div>
+            <div class="slot-selection">
+                <div class="slot-selection-heading">Выбрано: ${upgradeSourceItems.length}</div>
+                <div class="slot-selected-list">
+                    ${upgradeSourceItems.map(item => `
+                        <div class="slot-selected-item">
+                            ${skinImageMarkup(item, 'skin-art slot-selected-art')}
+                            <span class="slot-selected-name" title="${item.name}">${item.name}</span>
+                            ${marketPriceMarkup(item, 'slot-selected-price')}
+                            <button type="button" class="slot-remove-item" data-remove-source="${item.id}"
+                                aria-label="Убрать скин из апгрейда" title="Убрать скин" ${isUpgrading ? 'disabled' : ''}>×</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="slot-selection-total">Итого: ${sourceTotal} ₽</div>
             </div>
         `;
         slotSource.classList.add('has-item');
@@ -60,14 +70,14 @@ function updateUpgradeUI() {
             upgradeChance = calculateUpgradeChance(sourceTotal, upgradeTarget.price);
             slotTargetContent.innerHTML = `
                 <div class="slot-item-display">
-                    <div class="slot-item-emoji">🔫</div>
+                    ${skinImageMarkup(upgradeTarget, 'skin-art slot-target-art')}
                     <div class="slot-item-rarity" style="color: ${RARITY_COLORS[upgradeTarget.rarity]}">${RARITY_NAMES[upgradeTarget.rarity]}</div>
                     <div class="slot-item-name">${upgradeTarget.name}</div>
-                    <div class="slot-item-price">${upgradeTarget.price} ₽</div>
+                    ${marketPriceMarkup(upgradeTarget, 'slot-item-price')}
                 </div>
             `;
             slotTarget.classList.add('has-item');
-            infoTarget.textContent = `${upgradeTarget.name} — ${upgradeTarget.price} ₽`;
+            infoTarget.textContent = `${upgradeTarget.name} — ${formatMoney(upgradeTarget.price)} ₽${upgradeTarget.marketWear ? ` · ${upgradeTarget.marketWear}` : ''}`;
         } else {
             upgradeTarget = null;
             upgradeChance = 0;
@@ -106,7 +116,11 @@ function updateUpgradeUI() {
     chancePointer.style.transform = 'rotate(0deg)';
     void chancePointer.offsetWidth;
 
-    btnUpgrade.disabled = !upgradeTarget || upgradeSourceItems.length === 0;
+    btnSelectSource.disabled = isUpgrading;
+    document.querySelectorAll('.mult-btn, .quick-btn').forEach(button => {
+        button.disabled = isUpgrading;
+    });
+    btnUpgrade.disabled = isUpgrading || !upgradeTarget || upgradeSourceItems.length === 0;
 }
 
 function renderUpgradeSlots() {

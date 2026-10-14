@@ -1,5 +1,5 @@
 function renderInventory() {
-    const inv = getInventory();
+    const inv = getInventory().map(getMarketSkin);
     const sorted = sortInventory(inv, invSortSelect.value);
 
     invCountEl.textContent = inv.length;
@@ -20,8 +20,9 @@ function renderInventory() {
     inventoryGrid.innerHTML = sorted.map(item => `
         <div class="inventory-item" data-id="${item.id}">
             <div class="inv-item-rarity" style="color: ${RARITY_COLORS[item.rarity]}">${RARITY_NAMES[item.rarity]}</div>
+            ${skinImageMarkup(item, 'skin-art')}
             <div class="inv-item-name">${item.name}</div>
-            <div class="inv-item-price">${item.price} ₽</div>
+            ${marketPriceMarkup(item, 'inv-item-price')}
             <button class="btn-sell" data-id="${item.id}">💸 Продать</button>
         </div>
     `).join('');
