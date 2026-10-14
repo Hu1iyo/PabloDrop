@@ -132,7 +132,7 @@ function skinImageMarkup(item, className = 'skin-art') {
 
 function marketPriceMarkup(item, className = 'skin-market-price') {
     if (!isMarketPriceAvailable(item)) {
-        const note = item.priceFeedAvailable === false ? 'Skinport недоступен' : 'нет котировки';
+        const note = item.priceFeedAvailable === false ? 'цены временно недоступны' : 'нет котировки';
         return `<span class="${className} market-price-unavailable">Цена недоступна<small>${note}</small></span>`;
     }
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
@@ -142,11 +142,11 @@ function marketPriceMarkup(item, className = 'skin-market-price') {
         '"': '&quot;',
         "'": '&#39;',
     })[character]);
-    const wear = item.marketWear ? `Skinport · ${escapeHtml(item.marketWear)}` : 'Skinport';
     const updatedAt = item.marketPriceUpdatedAt
         ? `Котировка обновлена ${new Date(item.marketPriceUpdatedAt).toLocaleString('ru-RU')}`
-        : 'Актуальная котировка Skinport';
-    const content = `${formatMoney(item.price)} ₽<small>${wear}</small>`;
+        : 'Актуальная рыночная котировка';
+    const wear = item.marketWear ? `<small>${escapeHtml(item.marketWear)}</small>` : '';
+    const content = `${formatMoney(item.price)} ₽${wear}`;
     if (!item.marketUrl) {
         return `<span class="${className}" title="${updatedAt}">${content}</span>`;
     }
