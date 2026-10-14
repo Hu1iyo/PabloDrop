@@ -82,6 +82,14 @@
     }
     .case-image {
         height: 110px;
-        font-size: 42px;
+    }
+    .case-art-opening {
+        width: 94px;
+        height: 74px;
+        flex-basis: 94px;
+    }
+    .case-art-opening .case-art-crate {
+        width: 50px;
+        height: 30px;
     }
 }

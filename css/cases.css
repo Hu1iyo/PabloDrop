@@ -124,16 +124,237 @@
     font-size: 9px;
 }
 
+.case-art {
+    --case-color: #f7c948;
+    --case-glow: rgba(247,201,72,0.34);
+    position: relative;
+    isolation: isolate;
+    display: block;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    background:
+        radial-gradient(ellipse at 50% 76%, var(--case-glow), transparent 52%),
+        linear-gradient(145deg, rgba(255,255,255,0.1), rgba(8,11,18,0.7));
+}
+
 .case-image {
     width: 100%;
     height: 140px;
-    background: radial-gradient(circle at 50% 80%, rgba(247,201,72,0.08), transparent 70%);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 56px;
     margin-bottom: 16px;
+}
+
+.case-art::before {
+    position: absolute;
+    z-index: -1;
+    inset: -30%;
+    content: '';
+    background: repeating-conic-gradient(from 0deg at 50% 50%, transparent 0deg 12deg, var(--case-glow) 13deg 14deg, transparent 15deg 30deg);
+    opacity: 0.55;
+    transform: rotate(10deg);
+}
+
+.case-art::after {
+    position: absolute;
+    right: 12%;
+    bottom: 18%;
+    left: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--case-color), transparent);
+    content: '';
+    opacity: 0.45;
+    box-shadow: 0 0 18px 3px var(--case-glow);
+}
+
+.case-art--gold { --case-color: #f5c451; --case-glow: rgba(245,196,81,0.42); }
+.case-art--ice { --case-color: #7fe5ff; --case-glow: rgba(72,194,255,0.4); }
+.case-art--jungle { --case-color: #53db91; --case-glow: rgba(38,201,111,0.38); }
+.case-art--ocean { --case-color: #53cfff; --case-glow: rgba(39,151,255,0.42); }
+.case-art--neon { --case-color: #df74ff; --case-glow: rgba(174,67,255,0.42); }
+.case-art--blade { --case-color: #ff6d84; --case-glow: rgba(255,52,97,0.4); }
+.case-art--glove { --case-color: #ff9c5c; --case-glow: rgba(255,126,54,0.38); }
+.case-art--sniper { --case-color: #6bd9ce; --case-glow: rgba(48,205,186,0.38); }
+.case-art--pistol { --case-color: #f37d69; --case-glow: rgba(240,91,69,0.38); }
+.case-art--smg { --case-color: #a2e36f; --case-glow: rgba(112,217,57,0.38); }
+.case-art--heavy { --case-color: #ff8b51; --case-glow: rgba(255,89,37,0.42); }
+.case-art--starter { --case-color: #93a9c8; --case-glow: rgba(109,142,194,0.34); }
+.case-art--tactical { --case-color: #f7c948; --case-glow: rgba(247,201,72,0.34); }
+
+.case-art-halo {
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    width: 130px;
+    height: 130px;
+    border: 1px solid color-mix(in srgb, var(--case-color) 42%, transparent);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 45px var(--case-glow), inset 0 0 30px var(--case-glow);
+    opacity: 0.65;
+}
+
+.case-art-platform {
+    position: absolute;
+    right: 14%;
+    bottom: 9%;
+    left: 14%;
+    height: 20px;
+    border: 1px solid color-mix(in srgb, var(--case-color) 35%, transparent);
+    border-radius: 50%;
+    background: var(--case-glow);
+    filter: blur(1px);
+    transform: perspective(100px) rotateX(50deg);
+}
+
+.case-art-crate {
+    position: absolute;
+    right: 50%;
+    bottom: 15%;
+    width: 82px;
+    height: 49px;
+    border: 1px solid var(--case-color);
+    border-radius: 7px;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--case-color) 24%, #29303d), #10141d 75%);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.55), 0 0 22px var(--case-glow), inset 0 1px rgba(255,255,255,0.22);
+    transform: translateX(50%) perspective(120px) rotateX(-8deg) rotateY(-12deg);
+    transition: transform 0.35s ease;
+}
+
+.case-art-crate::before {
+    position: absolute;
+    inset: 5px;
+    border: 1px solid color-mix(in srgb, var(--case-color) 34%, transparent);
+    border-radius: 5px;
+    content: '';
+}
+
+.case-art-crate-lid {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 9px;
+    border-bottom: 1px solid color-mix(in srgb, var(--case-color) 45%, transparent);
+    background: rgba(255,255,255,0.07);
+}
+
+.case-art-crate-lock {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    width: 8px;
+    height: 10px;
+    border: 1px solid var(--case-color);
+    border-radius: 2px;
+    background: #11151d;
+    transform: translateX(-50%);
+}
+
+.case-art-crate-lock::before {
+    position: absolute;
+    top: -4px;
+    left: 1px;
+    width: 4px;
+    height: 4px;
+    border: 1px solid var(--case-color);
+    border-bottom: 0;
+    border-radius: 4px 4px 0 0;
+    content: '';
+}
+
+.case-art-skin {
+    position: absolute;
+    z-index: 2;
+    top: 4%;
+    left: 50%;
+    display: block;
+    width: 94%;
+    height: 92%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 7px rgba(0,0,0,0.7)) drop-shadow(0 0 13px var(--case-glow));
+    transform: translateX(-50%) rotate(-9deg) scale(1.08);
+    transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.case-art-skin .skin-art-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.case-art-weapon {
+    position: absolute;
+    z-index: 2;
+    top: 34%;
+    left: 50%;
+    width: 116px;
+    height: 13px;
+    border: 1px solid rgba(255,255,255,0.65);
+    border-radius: 3px;
+    background: linear-gradient(180deg, #e7d29b, #675b46 45%, #222733 48%, #131821);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.6), 0 0 17px var(--case-glow);
+    transform: translateX(-50%) rotate(-11deg);
+}
+
+.case-art-weapon-barrel,
+.case-art-weapon-stock,
+.case-art-weapon-grip {
+    position: absolute;
+    display: block;
+    background: #252a33;
+}
+
+.case-art-weapon-barrel {
+    top: 4px;
+    right: -28px;
+    width: 31px;
+    height: 4px;
+}
+
+.case-art-weapon-stock {
+    top: 1px;
+    left: -20px;
+    width: 22px;
+    height: 9px;
+    border-radius: 3px 0 0 3px;
+}
+
+.case-art-weapon-grip {
+    right: 26px;
+    bottom: -12px;
+    width: 9px;
+    height: 14px;
+    border-radius: 0 0 2px 2px;
+    transform: skew(-14deg);
+}
+
+.case-card:hover .case-art-crate {
+    transform: translateX(50%) perspective(120px) rotateX(-8deg) rotateY(-12deg) translateY(-3px);
+}
+
+.case-card:hover .case-art-skin {
+    filter: drop-shadow(0 11px 9px rgba(0,0,0,0.72)) drop-shadow(0 0 18px var(--case-glow));
+    transform: translateX(-50%) rotate(-6deg) scale(1.16);
+}
+
+.case-art-opening {
+    width: 120px;
+    height: 90px;
+    flex: 0 0 120px;
+    margin: 0;
+    border-radius: 8px;
+}
+
+.case-art-opening .case-art-crate {
+    width: 60px;
+    height: 35px;
+}
+
+.case-art-opening .case-art-skin {
+    top: 8%;
+    width: 92%;
+    height: 84%;
+    transform: translateX(-50%) rotate(-5deg);
 }
 
 .case-name {

@@ -20,7 +20,7 @@ function openCasePage(caseId) {
 
     caseTitle.textContent = currentCase.name;
     casePrice.textContent = currentCase.price + ' ₽';
-    caseEmoji.textContent = currentCase.emoji;
+    caseEmoji.innerHTML = caseArtworkMarkup(currentCase, 'opening');
     openQuantity = 1;
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.qty-btn[data-qty="1"]').classList.add('active');

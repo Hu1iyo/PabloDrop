@@ -36,7 +36,7 @@
     gap: 16px;
 }
 
-.opening-emoji { font-size: 40px; }
+.opening-emoji { font-size: 0; }
 .opening-case-info h2 { font-size: 24px; font-weight: 800; }
 .opening-price { color: var(--accent); font-weight: 700; font-size: 14px; }
 
