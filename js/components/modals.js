@@ -3,7 +3,7 @@ function openSellModal(itemId) {
     const item = inv.find(i => i.id === itemId);
     if (!item) return;
     pendingSellItem = item;
-    modalItem.textContent = item.name;
+    modalItem.textContent = getDisplaySkinName(item.name);
     modalItem.style.color = RARITY_COLORS[item.rarity];
     modalPrice.textContent = item.price;
     sellModal.style.display = 'flex';

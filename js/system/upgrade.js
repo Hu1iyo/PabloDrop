@@ -42,7 +42,7 @@ function updateUpgradeUI() {
                     ${upgradeSourceItems.map(item => `
                         <div class="slot-selected-item">
                             ${skinImageMarkup(item, 'skin-art slot-selected-art')}
-                            <span class="slot-selected-name" title="${item.name}">${item.name}</span>
+                            <span class="slot-selected-name" title="${getDisplaySkinName(item.name)}">${getDisplaySkinName(item.name)}</span>
                             ${marketPriceMarkup(item, 'slot-selected-price')}
                             <button type="button" class="slot-remove-item" data-remove-source="${item.id}"
                                 aria-label="Убрать скин из апгрейда" title="Убрать скин" ${isUpgrading ? 'disabled' : ''}>×</button>
@@ -72,12 +72,12 @@ function updateUpgradeUI() {
                 <div class="slot-item-display">
                     ${skinImageMarkup(upgradeTarget, 'skin-art slot-target-art')}
                     <div class="slot-item-rarity" style="color: ${RARITY_COLORS[upgradeTarget.rarity]}">${RARITY_NAMES[upgradeTarget.rarity]}</div>
-                    <div class="slot-item-name">${upgradeTarget.name}</div>
+                    <div class="slot-item-name">${getDisplaySkinName(upgradeTarget.name)}</div>
                     ${marketPriceMarkup(upgradeTarget, 'slot-item-price')}
                 </div>
             `;
             slotTarget.classList.add('has-item');
-            infoTarget.textContent = `${upgradeTarget.name} — ${formatMoney(upgradeTarget.price)} ₽`;
+            infoTarget.textContent = `${getDisplaySkinName(upgradeTarget.name)} — ${formatMoney(upgradeTarget.price)} ₽`;
         } else {
             upgradeTarget = null;
             upgradeChance = 0;

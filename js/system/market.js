@@ -1,6 +1,10 @@
 const SKIN_MARKET_STORAGE_KEY = 'pabloSkinMarketCache';
 const SKIN_MARKET_DATA = {};
 
+function getDisplaySkinName(name) {
+    return name.replace(/\s*(?:\(Factory New\)|FN)$/i, '');
+}
+
 function getMarketSkin(item) {
     const market = SKIN_MARKET_DATA[item.name];
     if (!market) return { ...item, marketPriceAvailable: false };

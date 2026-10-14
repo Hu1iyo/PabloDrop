@@ -10,7 +10,7 @@ function renderShowcase() {
         div.style.borderTop = `3px solid ${RARITY_COLORS[item.rarity]}`;
         div.innerHTML = `
             ${skinImageMarkup(item, 'skin-art')}
-            <div class="showcase-item-name">${item.name}</div>
+            <div class="showcase-item-name">${getDisplaySkinName(item.name)}</div>
             ${marketPriceMarkup(item, 'showcase-item-price')}
         `;
         return div;

@@ -65,7 +65,7 @@ function createRouletteItem(item) {
     div.style.borderTop = `3px solid ${RARITY_COLORS[item.rarity]}`;
     div.innerHTML = `
         ${skinImageMarkup(item, 'skin-art')}
-        <div class="roulette-item-name">${item.name}</div>
+        <div class="roulette-item-name">${getDisplaySkinName(item.name)}</div>
         ${marketPriceMarkup(item, 'roulette-item-price')}
     `;
     return div;

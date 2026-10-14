@@ -29,7 +29,7 @@ function openCasePage(caseId) {
     contentsGrid.innerHTML = currentCase.items.map(item => `
         <div class="content-item">
             ${skinImageMarkup(item, 'skin-art')}
-            <div class="content-item-name">${item.name}</div>
+            <div class="content-item-name">${getDisplaySkinName(item.name)}</div>
             ${marketPriceMarkup(item, 'content-item-price')}
         </div>
     `).join('');
@@ -139,7 +139,7 @@ openBtn.addEventListener('click', () => {
                 <div class="result-label">Кейс #${idx + 1}</div>
                 <div class="result-item" style="color: ${RARITY_COLORS[item.rarity]}">
                     ${skinImageMarkup(item, 'skin-art result-item-art')}
-                    ${item.name} — ${marketPriceMarkup(item, 'result-item-price')}
+                    ${getDisplaySkinName(item.name)} — ${marketPriceMarkup(item, 'result-item-price')}
                 </div>
             `;
             resultsContainer.appendChild(resultBox);

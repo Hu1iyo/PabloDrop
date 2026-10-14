@@ -35,7 +35,7 @@ function renderSkinSelectGrid(filter = '') {
                  data-name="${s.name}" data-price="${marketSkin.price}" data-rarity="${s.rarity}"
                      data-id="${s.id}" ${isUpgrading ? 'disabled' : ''}>
                 ${skinImageMarkup(marketSkin, 'skin-art')}
-                <div class="skin-option-name">${s.name}</div>
+                <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
                 ${marketPriceMarkup(marketSkin, 'skin-option-price')}
                 <div class="skin-option-rarity">${RARITY_NAMES[s.rarity]}</div>
                 </button>
@@ -147,7 +147,7 @@ btnUpgrade.addEventListener('click', () => {
             });
             upgradeResult.style.display = 'block';
             upgradeResult.className = 'upgrade-result win';
-            upgradeResult.innerHTML = `🎉 УСПЕХ! Получен: <strong>${upgradeTarget.name}</strong> (${upgradeTarget.price} ₽)`;
+            upgradeResult.innerHTML = `🎉 УСПЕХ! Получен: <strong>${getDisplaySkinName(upgradeTarget.name)}</strong> (${upgradeTarget.price} ₽)`;
             upgradeSourceItems = [];
         } else {
             upgradeResult.style.display = 'block';

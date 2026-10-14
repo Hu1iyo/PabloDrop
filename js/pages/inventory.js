@@ -21,7 +21,7 @@ function renderInventory() {
         <div class="inventory-item" data-id="${item.id}">
             <div class="inv-item-rarity" style="color: ${RARITY_COLORS[item.rarity]}">${RARITY_NAMES[item.rarity]}</div>
             ${skinImageMarkup(item, 'skin-art')}
-            <div class="inv-item-name">${item.name}</div>
+            <div class="inv-item-name">${getDisplaySkinName(item.name)}</div>
             ${marketPriceMarkup(item, 'inv-item-price')}
             <button class="btn-sell" data-id="${item.id}">💸 Продать</button>
         </div>
