@@ -77,7 +77,7 @@ function updateUpgradeUI() {
                 </div>
             `;
             slotTarget.classList.add('has-item');
-            infoTarget.textContent = `${upgradeTarget.name} — ${formatMoney(upgradeTarget.price)} ₽${upgradeTarget.marketWear ? ` · ${upgradeTarget.marketWear}` : ''}`;
+            infoTarget.textContent = `${upgradeTarget.name} — ${formatMoney(upgradeTarget.price)} ₽`;
         } else {
             upgradeTarget = null;
             upgradeChance = 0;

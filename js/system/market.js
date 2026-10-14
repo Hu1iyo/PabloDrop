@@ -93,6 +93,5 @@ function marketPriceMarkup(item, className = 'skin-market-price') {
         const note = item.priceFeedAvailable === false ? '<small>рынок недоступен</small>' : '';
         return `<span class="${className} market-price-estimate">≈ ${formatMoney(price)} ₽${note}</span>`;
     }
-    const wear = item.marketWear ? `<small>${item.marketWear}</small>` : '';
-    return `<span class="${className}">${formatMoney(price)} ₽${wear}</span>`;
+    return `<span class="${className}">${formatMoney(price)} ₽</span>`;
 }
