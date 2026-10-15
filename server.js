@@ -12,14 +12,216 @@ const { promisify } = require('util');
 const PORT = Number(process.argv[2]) || Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 const USERS_FILE = path.join(ROOT, 'data', 'users.json');
+const SKIN_IMAGES_DIR = path.join(ROOT, 'data', 'skin-images');
+const SKIN_IMAGES_MANIFEST_FILE = path.join(ROOT, 'data', 'skin-images.json');
 const scrypt = promisify(crypto.scrypt);
 let registrationQueue = Promise.resolve();
 const SKIN_CATALOG_URL = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json';
 const SKINPORT_PRICES_URL = 'https://api.skinport.com/v1/items?app_id=730&currency=RUB';
 const SKIN_MARKET_CACHE_MS = 5 * 60 * 1000;
+const SKIN_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 let skinMarketCache = null;
 let skinMarketCacheExpiresAt = 0;
 let skinMarketRequest = null;
+let skinImageManifest = null;
+let skinImageManifestRequest = null;
+let skinImageManifestWrite = Promise.resolve();
+const skinImageRequests = new Map();
+
+function isAllowedSkinImageUrl(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && url.hostname === 'community.akamai.steamstatic.com';
+    } catch {
+        return false;
+    }
+}
+
+function getSkinImageHash(sourceUrl) {
+    return crypto.createHash('sha256').update(sourceUrl).digest('hex');
+}
+
+async function loadSkinImageManifest() {
+    if (skinImageManifest) return skinImageManifest;
+    if (!skinImageManifestRequest) {
+        skinImageManifestRequest = fs.promises.readFile(SKIN_IMAGES_MANIFEST_FILE, 'utf8')
+            .then(contents => JSON.parse(contents))
+            .catch(error => {
+                if (error.code === 'ENOENT') return {};
+                throw error;
+            })
+            .then(manifest => {
+                if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+                    throw new Error('Invalid skin image manifest');
+                }
+                skinImageManifest = manifest;
+                return skinImageManifest;
+            })
+            .finally(() => {
+                skinImageManifestRequest = null;
+            });
+    }
+    return skinImageManifestRequest;
+}
+
+function saveSkinImageManifest() {
+    const write = skinImageManifestWrite.then(async () => {
+        await fs.promises.mkdir(path.dirname(SKIN_IMAGES_MANIFEST_FILE), { recursive: true });
+        const temporaryFile = `${SKIN_IMAGES_MANIFEST_FILE}.${crypto.randomUUID()}.tmp`;
+        await fs.promises.writeFile(temporaryFile, JSON.stringify(skinImageManifest, null, 2));
+        await fs.promises.rename(temporaryFile, SKIN_IMAGES_MANIFEST_FILE);
+    });
+    skinImageManifestWrite = write.catch(error => {
+        console.error('Не удалось сохранить манифест изображений скинов:', error.message);
+    });
+    return write;
+}
+
+async function registerSkinImages(sourceUrls) {
+    const manifest = await loadSkinImageManifest();
+    let changed = false;
+    const imagePaths = new Map();
+
+    for (const sourceUrl of sourceUrls) {
+        if (typeof sourceUrl !== 'string' || !isAllowedSkinImageUrl(sourceUrl)) continue;
+        const hash = getSkinImageHash(sourceUrl);
+        imagePaths.set(sourceUrl, `/api/skin-images/${hash}`);
+        if (!manifest[hash]) {
+            manifest[hash] = { sourceUrl };
+            changed = true;
+        }
+    }
+
+    if (changed) await saveSkinImageManifest();
+    return imagePaths;
+}
+
+function sendCachedSkinImage(res, filePath, contentType) {
+    fs.stat(filePath, (error, stat) => {
+        if (error || !stat.isFile()) {
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return res.end('Изображение не найдено');
+        }
+
+        res.writeHead(200, {
+            'Content-Type': contentType,
+            'Content-Length': stat.size,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+        });
+        const stream = fs.createReadStream(filePath);
+        stream.on('error', () => {
+            if (!res.headersSent) res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('Ошибка чтения изображения');
+        });
+        stream.pipe(res);
+    });
+}
+
+async function cacheSkinImage(hash, entry) {
+    if (!isAllowedSkinImageUrl(entry.sourceUrl) || getSkinImageHash(entry.sourceUrl) !== hash) {
+        throw new Error('Invalid skin image source');
+    }
+
+    const response = await fetch(entry.sourceUrl, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(20000),
+    });
+    if (!response.ok) throw new Error(`Skin image source returned ${response.status}`);
+
+    const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+    const extensionsByType = {
+        'image/gif': 'gif',
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+    };
+    const extension = extensionsByType[contentType];
+    if (!extension) throw new Error(`Unsupported skin image content type: ${contentType || 'unknown'}`);
+
+    const contentLength = Number(response.headers.get('content-length'));
+    if (Number.isFinite(contentLength) && contentLength > SKIN_IMAGE_MAX_BYTES) {
+        throw new Error('Skin image exceeds the size limit');
+    }
+    const chunks = [];
+    let imageSize = 0;
+    for await (const chunk of response.body) {
+        imageSize += chunk.length;
+        if (imageSize > SKIN_IMAGE_MAX_BYTES) {
+            throw new Error('Skin image exceeds the size limit');
+        }
+        chunks.push(chunk);
+    }
+    if (imageSize === 0) {
+        throw new Error('Skin image is empty or exceeds the size limit');
+    }
+    const image = Buffer.concat(chunks, imageSize);
+
+    await fs.promises.mkdir(SKIN_IMAGES_DIR, { recursive: true });
+    const fileName = `${hash}.${extension}`;
+    const imagePath = path.join(SKIN_IMAGES_DIR, fileName);
+    const temporaryFile = `${imagePath}.${crypto.randomUUID()}.tmp`;
+    await fs.promises.writeFile(temporaryFile, image);
+    await fs.promises.rename(temporaryFile, imagePath);
+
+    entry.fileName = fileName;
+    entry.contentType = contentType;
+    await saveSkinImageManifest();
+    return imagePath;
+}
+
+async function handleSkinImageRequest(req, res, hash) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Метод не поддерживается' });
+        return;
+    }
+
+    try {
+        const manifest = await loadSkinImageManifest();
+        const entry = manifest[hash];
+        if (!entry) {
+            sendJson(res, 404, { error: 'Изображение не найдено' });
+            return;
+        }
+
+        let imagePath = entry.fileName && /^[a-f0-9]{64}\.(gif|jpg|png|webp)$/.test(entry.fileName)
+            ? path.join(SKIN_IMAGES_DIR, entry.fileName)
+            : null;
+        if (imagePath) {
+            try {
+                await fs.promises.access(imagePath);
+            } catch (error) {
+                if (error.code !== 'ENOENT') throw error;
+                imagePath = null;
+                delete entry.fileName;
+                delete entry.contentType;
+            }
+        }
+
+        if (!imagePath) {
+            let request = skinImageRequests.get(hash);
+            if (!request) {
+                request = cacheSkinImage(hash, entry).finally(() => skinImageRequests.delete(hash));
+                skinImageRequests.set(hash, request);
+            }
+            imagePath = await request;
+        }
+
+        if (req.method === 'HEAD') {
+            const stat = await fs.promises.stat(imagePath);
+            res.writeHead(200, {
+                'Content-Type': entry.contentType,
+                'Content-Length': stat.size,
+                'Cache-Control': 'public, max-age=31536000, immutable',
+            });
+            res.end();
+            return;
+        }
+        sendCachedSkinImage(res, imagePath, entry.contentType);
+    } catch (error) {
+        console.error('Не удалось загрузить изображение скина:', error.message);
+        sendJson(res, 502, { error: 'Не удалось загрузить изображение скина' });
+    }
+}
 
 function parseRequestedSkinName(name) {
     const wearAliases = new Map([
@@ -158,6 +360,7 @@ async function handleSkinMarketRequest(req, res) {
             .filter(Boolean))];
         const { skinsByName, skinsByWeapon, pricesByName, pricesAvailable, updatedAt } = await getSkinMarketSources();
         const items = {};
+        const imageSources = new Set();
 
         for (const name of names) {
             const { baseName, wear: requestedWear } = parseRequestedSkinName(name);
@@ -184,7 +387,7 @@ async function handleSkinMarketRequest(req, res) {
                     || listings.sort((a, b) => (b.listing.quantity || 0) - (a.listing.quantity || 0))[0];
 
             items[name] = {
-                image: imageSkin.image || null,
+                image: imageSkin.image && isAllowedSkinImageUrl(imageSkin.image) ? imageSkin.image : null,
                 imageIsExact: Boolean(skin),
                 imageSourceName: imageSkin.name,
                 priceFeedAvailable: pricesAvailable,
@@ -197,6 +400,12 @@ async function handleSkinMarketRequest(req, res) {
                     ? new Date(selected.listing.updated_at * 1000).toISOString()
                     : null,
             };
+            if (items[name].image) imageSources.add(items[name].image);
+        }
+
+        const localImagePaths = await registerSkinImages(imageSources);
+        for (const item of Object.values(items)) {
+            if (item.image) item.image = localImagePaths.get(item.image) || null;
         }
 
         sendJson(res, 200, { items, pricesAvailable, updatedAt });
@@ -317,6 +526,12 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    const skinImageMatch = req.url.split('?')[0].match(/^\/api\/skin-images\/([a-f0-9]{64})$/);
+    if (skinImageMatch) {
+        handleSkinImageRequest(req, res, skinImageMatch[1]);
+        return;
+    }
+
     if (req.url.startsWith('/api/')) {
         handleAuthRequest(req, res);
         return;
@@ -336,7 +551,12 @@ const server = http.createServer((req, res) => {
     const filePath = path.normalize(path.join(ROOT, urlPath));
     const normalizedFilePath = filePath.toLowerCase();
     const normalizedUsersFile = USERS_FILE.toLowerCase();
-    if (normalizedFilePath === normalizedUsersFile || normalizedFilePath.startsWith(`${normalizedUsersFile}.`)) {
+    const normalizedSkinImagesDir = SKIN_IMAGES_DIR.toLowerCase();
+    const normalizedSkinImagesManifest = SKIN_IMAGES_MANIFEST_FILE.toLowerCase();
+    if (normalizedFilePath === normalizedUsersFile
+        || normalizedFilePath.startsWith(`${normalizedUsersFile}.`)
+        || normalizedFilePath === normalizedSkinImagesManifest
+        || normalizedFilePath.startsWith(`${normalizedSkinImagesDir}${path.sep}`)) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end('404 — Не найдено');
     }
