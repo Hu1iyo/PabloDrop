@@ -16,7 +16,6 @@ const SKIN_IMAGES_DIR = path.join(ROOT, 'data', 'skin-images');
 const SKIN_IMAGES_MANIFEST_FILE = path.join(ROOT, 'data', 'skin-images.json');
 const scrypt = promisify(crypto.scrypt);
 let registrationQueue = Promise.resolve();
-const SKIN_CATALOG_URL = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json';
 const SKINPORT_PRICES_URL = 'https://api.skinport.com/v1/items?app_id=730&currency=RUB';
 const SKIN_MARKET_CACHE_MS = 5 * 60 * 1000;
 const SKIN_IMAGE_CONTENT_TYPES = {
@@ -99,19 +98,29 @@ async function findCachedSkinImage(hash, manifest) {
     return null;
 }
 
-async function registerSkinImages(sourceUrls) {
-    const manifest = await loadSkinImageManifest();
-    const imagePaths = new Map();
+function normalizeSkinImageName(name) {
+    return name
+        .replace(/^★\s*/, '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+}
 
-    for (const sourceUrl of sourceUrls) {
-        if (typeof sourceUrl !== 'string' || !isAllowedSkinImageUrl(sourceUrl)) continue;
-        const hash = getSkinImageHash(sourceUrl);
-        if (await findCachedSkinImage(hash, manifest)) {
-            imagePaths.set(sourceUrl, `/api/skin-images/${hash}`);
-        }
+async function loadLocalSkinImageIndex() {
+    await fs.promises.mkdir(SKIN_IMAGES_DIR, { recursive: true });
+    const files = await fs.promises.readdir(SKIN_IMAGES_DIR, { withFileTypes: true });
+    const images = new Map();
+
+    for (const file of files) {
+        if (!file.isFile() || path.extname(file.name).toLocaleLowerCase() !== '.png') continue;
+        const stem = path.basename(file.name, path.extname(file.name));
+        if (/^[a-f0-9]{64}$/i.test(stem)) continue;
+        const key = normalizeSkinImageName(parseRequestedSkinName(stem).baseName);
+        if (key && !images.has(key)) images.set(key, file.name);
     }
 
-    return imagePaths;
+    return images;
 }
 
 function sendCachedSkinImage(res, filePath, contentType) {
@@ -133,6 +142,58 @@ function sendCachedSkinImage(res, filePath, contentType) {
         });
         stream.pipe(res);
     });
+}
+
+async function handleLocalSkinImageRequest(req, res, encodedFileName) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Метод не поддерживается' });
+        return;
+    }
+
+    let fileName;
+    try {
+        fileName = decodeURIComponent(encodedFileName);
+    } catch {
+        sendJson(res, 400, { error: 'Некорректное имя изображения' });
+        return;
+    }
+
+    if (path.basename(fileName) !== fileName || path.extname(fileName).toLocaleLowerCase() !== '.png') {
+        sendJson(res, 404, { error: 'Изображение не найдено' });
+        return;
+    }
+
+    const filePath = path.join(SKIN_IMAGES_DIR, fileName);
+    try {
+        const stat = await fs.promises.lstat(filePath);
+        if (!stat.isFile()) {
+            sendJson(res, 404, { error: 'Изображение не найдено' });
+            return;
+        }
+        res.writeHead(200, {
+            'Content-Type': 'image/png',
+            'Content-Length': stat.size,
+            'Cache-Control': 'public, max-age=3600',
+        });
+        if (req.method === 'HEAD') {
+            res.end();
+            return;
+        }
+        const stream = fs.createReadStream(filePath);
+        stream.on('error', error => {
+            console.error('Не удалось прочитать локальное изображение скина:', error.message);
+            if (!res.headersSent) res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('Ошибка чтения изображения');
+        });
+        stream.pipe(res);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            sendJson(res, 404, { error: 'Изображение не найдено' });
+            return;
+        }
+        console.error('Не удалось прочитать локальное изображение скина:', error.message);
+        sendJson(res, 500, { error: 'Не удалось прочитать локальное изображение скина' });
+    }
 }
 
 async function handleSkinImageRequest(req, res, hash) {
@@ -179,9 +240,9 @@ function parseRequestedSkinName(name) {
         ['ww', 'Well-Worn'],
         ['bs', 'Battle-Scarred'],
     ]);
-    const wearPattern = /\s+(Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred|FN|MW|FT|WW|BS)$/i;
+    const wearPattern = /\s+(?:\((Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred|FN|MW|FT|WW|BS)\)|(Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred|FN|MW|FT|WW|BS))$/i;
     const match = name.match(wearPattern);
-    const wear = match ? wearAliases.get(match[1].toLocaleLowerCase()) : null;
+    const wear = match ? wearAliases.get((match[1] || match[2]).toLocaleLowerCase()) : null;
     const baseName = match ? name.slice(0, match.index).trim() : name;
     return { baseName, wear };
 }
@@ -231,37 +292,22 @@ async function readRequestBody(req, maxBytes = 16 * 1024) {
 }
 
 async function loadSkinMarketSources() {
-    const [catalogResponse, prices] = await Promise.all([
-        fetch(SKIN_CATALOG_URL, { signal: AbortSignal.timeout(30000) }),
-        fetch(SKINPORT_PRICES_URL, { signal: AbortSignal.timeout(30000) })
-            .then(async response => {
-                if (!response.ok) throw new Error(`Skinport returned ${response.status}`);
-                const items = await response.json();
-                if (!Array.isArray(items)) throw new Error('Skinport returned an invalid price list');
-                return items;
-            }),
-    ]);
-    if (!catalogResponse.ok) {
-        throw new Error(`Skin catalog returned ${catalogResponse.status}`);
+    const response = await fetch(SKINPORT_PRICES_URL, { signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error(`Skinport returned ${response.status}`);
+    const prices = await response.json();
+    if (!Array.isArray(prices)) throw new Error('Skinport returned an invalid price list');
+
+    const pricesByName = new Map();
+    for (const listing of prices) {
+        if (typeof listing.market_hash_name !== 'string') continue;
+        const { baseName, wear } = parseRequestedSkinName(listing.market_hash_name);
+        if (!wear) continue;
+        const key = normalizeSkinImageName(baseName);
+        if (!pricesByName.has(key)) pricesByName.set(key, []);
+        pricesByName.get(key).push({ wear, listing });
     }
 
-    const catalog = await catalogResponse.json();
-    const skinsByName = new Map();
-    const skinsByWeapon = new Map();
-    for (const skin of catalog) {
-        const name = skin.name.replace(/^★\s*/, '').trim().toLocaleLowerCase();
-        if (!skinsByName.has(name)) skinsByName.set(name, skin);
-
-        const weaponName = skin.weapon?.name?.trim().toLocaleLowerCase();
-        if (weaponName && skin.image && !skinsByWeapon.has(weaponName)) {
-            skinsByWeapon.set(weaponName, skin);
-        }
-    }
-
-    const pricesByName = new Map(prices.map(item => [item.market_hash_name, item]));
     return {
-        skinsByName,
-        skinsByWeapon,
         pricesByName,
         pricesAvailable: prices.length > 0,
         updatedAt: new Date().toISOString(),
@@ -301,38 +347,35 @@ async function handleSkinMarketRequest(req, res) {
             .filter(name => typeof name === 'string')
             .map(name => name.trim())
             .filter(Boolean))];
-        const { skinsByName, skinsByWeapon, pricesByName, pricesAvailable, updatedAt } = await getSkinMarketSources();
+        const localImages = await loadLocalSkinImageIndex();
+        let pricesByName = new Map();
+        let pricesAvailable = false;
+        let updatedAt = new Date().toISOString();
+        try {
+            const prices = await getSkinMarketSources();
+            pricesByName = prices.pricesByName;
+            pricesAvailable = prices.pricesAvailable;
+            updatedAt = prices.updatedAt;
+        } catch (error) {
+            console.error('Не удалось загрузить цены Skinport; локальные изображения будут показаны без цен:', error.message);
+        }
+
         const items = {};
-        const imageSources = new Set();
 
         for (const name of names) {
             const { baseName, wear: requestedWear } = parseRequestedSkinName(name);
-            const normalizedName = baseName.replace(/^★\s*/, '').toLocaleLowerCase();
-            const skin = skinsByName.get(normalizedName);
-            const weaponName = baseName.split('|')[0].replace(/^★\s*/, '').trim();
-            const imageSkin = skin || skinsByWeapon.get(weaponName.toLocaleLowerCase());
-            if (!imageSkin) continue;
-
-            const wearOptions = [...(skin?.wears || [])].sort((a, b) => {
-                if (a.name === 'Field-Tested') return -1;
-                if (b.name === 'Field-Tested') return 1;
-                return 0;
-            });
-            const listings = wearOptions
-                .map(wear => ({
-                    wear: wear.name,
-                    listing: pricesByName.get(`${skin.name} (${wear.name})`),
-                }))
-                .filter(option => option.listing && Number.isFinite(option.listing.min_price) && option.listing.min_price > 0);
-            const selected = requestedWear
+            const normalizedName = normalizeSkinImageName(baseName);
+            const listings = pricesByName.get(normalizedName) || [];
+            const selected = (requestedWear
                 ? listings.find(option => option.wear === requestedWear)
                 : listings.find(option => option.wear === 'Field-Tested')
-                    || listings.sort((a, b) => (b.listing.quantity || 0) - (a.listing.quantity || 0))[0];
+                    || [...listings].sort((a, b) => (b.listing.quantity || 0) - (a.listing.quantity || 0))[0]);
+            const imageFileName = localImages.get(normalizedName);
 
             items[name] = {
-                image: imageSkin.image && isAllowedSkinImageUrl(imageSkin.image) ? imageSkin.image : null,
-                imageIsExact: Boolean(skin),
-                imageSourceName: imageSkin.name,
+                image: imageFileName ? `/api/skin-images/local/${encodeURIComponent(imageFileName)}` : null,
+                imageIsExact: true,
+                imageSourceName: name,
                 priceFeedAvailable: pricesAvailable,
                 marketName: selected?.listing.market_hash_name || null,
                 wear: selected?.wear || null,
@@ -343,12 +386,6 @@ async function handleSkinMarketRequest(req, res) {
                     ? new Date(selected.listing.updated_at * 1000).toISOString()
                     : null,
             };
-            if (items[name].image) imageSources.add(items[name].image);
-        }
-
-        const localImagePaths = await registerSkinImages(imageSources);
-        for (const item of Object.values(items)) {
-            if (item.image) item.image = localImagePaths.get(item.image) || null;
         }
 
         sendJson(res, 200, { items, pricesAvailable, updatedAt });
@@ -472,6 +509,12 @@ const server = http.createServer((req, res) => {
     const skinImageMatch = req.url.split('?')[0].match(/^\/api\/skin-images\/([a-f0-9]{64})$/);
     if (skinImageMatch) {
         handleSkinImageRequest(req, res, skinImageMatch[1]);
+        return;
+    }
+
+    const localSkinImageMatch = req.url.split('?')[0].match(/^\/api\/skin-images\/local\/(.+)$/);
+    if (localSkinImageMatch) {
+        handleLocalSkinImageRequest(req, res, localSkinImageMatch[1]);
         return;
     }
 
