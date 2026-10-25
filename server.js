@@ -14,6 +14,7 @@ const ROOT = __dirname;
 const USERS_FILE = path.join(ROOT, 'data', 'users.json');
 const SKIN_IMAGES_DIR = path.join(ROOT, 'data', 'skin-images');
 const SKIN_IMAGES_MANIFEST_FILE = path.join(ROOT, 'data', 'skin-images.json');
+const SKIN_IMAGE_MAP_FILE = path.join(ROOT, 'data', 'skin-image-map.json');
 const scrypt = promisify(crypto.scrypt);
 let registrationQueue = Promise.resolve();
 const SKINPORT_PRICES_URL = 'https://api.skinport.com/v1/items?app_id=730&currency=RUB';
@@ -109,18 +110,49 @@ function normalizeSkinImageName(name) {
 
 async function loadLocalSkinImageIndex() {
     await fs.promises.mkdir(SKIN_IMAGES_DIR, { recursive: true });
-    const files = await fs.promises.readdir(SKIN_IMAGES_DIR, { withFileTypes: true });
+    const [files, skinImageMap] = await Promise.all([
+        fs.promises.readdir(SKIN_IMAGES_DIR, { withFileTypes: true }),
+        fs.promises.readFile(SKIN_IMAGE_MAP_FILE, 'utf8')
+            .then(contents => JSON.parse(contents))
+            .catch(error => {
+                if (error.code === 'ENOENT') return {};
+                throw error;
+            }),
+    ]);
+    if (!skinImageMap || typeof skinImageMap !== 'object' || Array.isArray(skinImageMap)) {
+        throw new Error('Invalid skin image map');
+    }
+
     const images = new Map();
+    const weaponImages = new Map();
+    const availableFiles = new Set(files
+        .filter(file => file.isFile() && path.extname(file.name).toLocaleLowerCase() === '.png')
+        .map(file => file.name));
+
+    for (const [skinName, fileName] of Object.entries(skinImageMap)) {
+        if (typeof fileName !== 'string'
+            || path.basename(fileName) !== fileName
+            || path.extname(fileName).toLocaleLowerCase() !== '.png'
+            || !availableFiles.has(fileName)) continue;
+        const baseName = parseRequestedSkinName(skinName).baseName;
+        const key = normalizeSkinImageName(baseName);
+        if (key && !images.has(key)) images.set(key, fileName);
+        const weaponKey = normalizeSkinImageName(baseName.split('|')[0].trim());
+        if (weaponKey && !weaponImages.has(weaponKey)) weaponImages.set(weaponKey, fileName);
+    }
 
     for (const file of files) {
         if (!file.isFile() || path.extname(file.name).toLocaleLowerCase() !== '.png') continue;
         const stem = path.basename(file.name, path.extname(file.name));
         if (/^[a-f0-9]{64}$/i.test(stem)) continue;
-        const key = normalizeSkinImageName(parseRequestedSkinName(stem).baseName);
+        const baseName = parseRequestedSkinName(stem).baseName;
+        const key = normalizeSkinImageName(baseName);
         if (key && !images.has(key)) images.set(key, file.name);
+        const weaponKey = normalizeSkinImageName(baseName.split('|')[0].trim());
+        if (weaponKey && !weaponImages.has(weaponKey)) weaponImages.set(weaponKey, file.name);
     }
 
-    return images;
+    return { images, weaponImages };
 }
 
 function sendCachedSkinImage(res, filePath, contentType) {
@@ -347,7 +379,7 @@ async function handleSkinMarketRequest(req, res) {
             .filter(name => typeof name === 'string')
             .map(name => name.trim())
             .filter(Boolean))];
-        const localImages = await loadLocalSkinImageIndex();
+        const { images: localImages, weaponImages } = await loadLocalSkinImageIndex();
         let pricesByName = new Map();
         let pricesAvailable = false;
         let updatedAt = new Date().toISOString();
@@ -370,12 +402,14 @@ async function handleSkinMarketRequest(req, res) {
                 ? listings.find(option => option.wear === requestedWear)
                 : listings.find(option => option.wear === 'Field-Tested')
                     || [...listings].sort((a, b) => (b.listing.quantity || 0) - (a.listing.quantity || 0))[0]);
-            const imageFileName = localImages.get(normalizedName);
+            const exactImageFileName = localImages.get(normalizedName);
+            const weaponName = normalizeSkinImageName(baseName.split('|')[0].trim());
+            const imageFileName = exactImageFileName || weaponImages.get(weaponName);
 
             items[name] = {
                 image: imageFileName ? `/api/skin-images/local/${encodeURIComponent(imageFileName)}` : null,
-                imageIsExact: true,
-                imageSourceName: name,
+                imageIsExact: Boolean(exactImageFileName),
+                imageSourceName: exactImageFileName ? name : baseName.split('|')[0].trim(),
                 priceFeedAvailable: pricesAvailable,
                 marketName: selected?.listing.market_hash_name || null,
                 wear: selected?.wear || null,
