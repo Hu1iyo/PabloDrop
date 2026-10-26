@@ -1,7 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-const port = Number(process.env.PORT) || 3000;
+const port = Number(process.env.PORT) || 4000;
 const server = spawn(process.execPath, [path.join(__dirname, 'server.js'), String(port)], {
     stdio: 'inherit',
     env: process.env,
