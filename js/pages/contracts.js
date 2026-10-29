@@ -69,6 +69,13 @@ function renderContracts() {
     updateContractSummary(items);
 }
 
+function clearContractSignature() {
+    const context = contractSignatureCanvas.getContext('2d');
+    context.clearRect(0, 0, contractSignatureCanvas.width, contractSignatureCanvas.height);
+    contractIsSigned = false;
+    updateContractSummary();
+}
+
 function setupContractSignature() {
     const canvas = contractSignatureCanvas;
     const context = canvas.getContext('2d');
@@ -107,11 +114,7 @@ function setupContractSignature() {
     const finishStroke = () => { drawing = false; };
     canvas.addEventListener('pointerup', finishStroke);
     canvas.addEventListener('pointercancel', finishStroke);
-    contractSignatureClear.addEventListener('click', () => {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        contractIsSigned = false;
-        updateContractSummary();
-    });
+    contractSignatureClear.addEventListener('click', clearContractSignature);
 }
 
 function renderContractResult(item) {
@@ -148,6 +151,7 @@ contractSubmit.addEventListener('click', () => {
     saveInventory(inventory.filter(item => !selectedIds.has(item.id)));
     addToInventory(reward);
     contractSelectedIds.clear();
+    clearContractSignature();
     renderContractResult(reward);
     contractIsRunning = false;
     renderContracts();
