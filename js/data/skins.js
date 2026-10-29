@@ -1,6 +1,4 @@
-// ===== ПУЛ СКИНОВ =====
 const SKINS_POOL = [
-    // Ширпотреб (white) — 3-50₽
     { name: 'P250 | Sand Dune', price: 3, rarity: 'white' },
     { name: 'MP9 | Storm', price: 5, rarity: 'white' },
     { name: 'Nova | Predator', price: 8, rarity: 'white' },
@@ -22,7 +20,6 @@ const SKINS_POOL = [
     { name: 'SCAR-20 | Sand Mesh', price: 15, rarity: 'white' },
     { name: 'FAMAS | Colony', price: 10, rarity: 'white' },
 
-    // Промышленное (lightblue) — 50-200₽
     { name: 'P250 | Mehndi', price: 60, rarity: 'lightblue' },
     { name: 'Nova | Polar Mesh', price: 80, rarity: 'lightblue' },
     { name: 'MAC-10 | Palm', price: 70, rarity: 'lightblue' },
@@ -44,7 +41,6 @@ const SKINS_POOL = [
     { name: 'MAG-7 | Heat', price: 75, rarity: 'lightblue' },
     { name: 'Tec-9 | Sandstorm', price: 145, rarity: 'lightblue' },
 
-    // Армейское (blue) — 200-500₽
     { name: 'AK-47 | Slate', price: 220, rarity: 'blue' },
     { name: 'M4A4 | Faded Zebra', price: 250, rarity: 'blue' },
     { name: 'AWP | Redline', price: 280, rarity: 'blue' },
@@ -66,7 +62,6 @@ const SKINS_POOL = [
     { name: 'FAMAS | Mecha Industries', price: 410, rarity: 'blue' },
     { name: 'XM1014 | Incinegrator', price: 440, rarity: 'blue' },
 
-    // Запрещённое (purple) — 500-1500₽
     { name: 'AK-47 | Redline', price: 550, rarity: 'purple' },
     { name: 'M4A1-S | Hyper Beast', price: 600, rarity: 'purple' },
     { name: 'AWP | Asiimov', price: 650, rarity: 'purple' },
@@ -88,7 +83,6 @@ const SKINS_POOL = [
     { name: 'AK-47 | Bloodsport', price: 1450, rarity: 'purple' },
     { name: 'AWP | Neo-Noir', price: 1500, rarity: 'purple' },
 
-    // Засекреченное (pink) — 1500-5000₽
     { name: 'AK-47 | Neon Rider', price: 1600, rarity: 'pink' },
     { name: 'M4A4 | In Living Color', price: 1700, rarity: 'pink' },
     { name: 'AWP | Dragon Fire', price: 1800, rarity: 'pink' },
@@ -110,7 +104,6 @@ const SKINS_POOL = [
     { name: 'AWP | Medusa', price: 4500, rarity: 'pink' },
     { name: 'M4A4 | Poseidon', price: 5000, rarity: 'pink' },
 
-    // Тайное (red) — 5000-25000₽
     { name: 'AK-47 | Wild Lotus', price: 6000, rarity: 'red' },
     { name: 'M4A4 | Howl', price: 7000, rarity: 'red' },
     { name: 'AWP | Dragon Lore', price: 8000, rarity: 'red' },
@@ -132,7 +125,6 @@ const SKINS_POOL = [
     { name: 'Karambit | Tiger Tooth', price: 20000, rarity: 'red' },
     { name: 'M9 Bayonet | Rust Coat', price: 18000, rarity: 'red' },
 
-    // Экстраординарное (gold) — 25000-250000₽
     { name: 'Karambit | Sapphire', price: 30000, rarity: 'gold' },
     { name: 'M9 Bayonet | Ruby', price: 35000, rarity: 'gold' },
     { name: 'Butterfly Knife | Sapphire', price: 40000, rarity: 'gold' },
@@ -155,12 +147,10 @@ const SKINS_POOL = [
     { name: 'Karambit | Marble Fade', price: 75000, rarity: 'gold' }
 ];
 
-// ===== ФУНКЦИЯ ЗАПОЛНЕНИЯ КЕЙСОВ =====
 function populateCases() {
     CASES.forEach(caseItem => {
         const casePrice = caseItem.price;
         
-        // Фильтруем скины по цене кейса (от 1% до 500% цены кейса)
         const minPrice = casePrice * 0.01;
         const maxPrice = casePrice * 5;
         
@@ -168,13 +158,10 @@ function populateCases() {
             s.price >= minPrice && s.price <= maxPrice
         );
 
-        // Перемешиваем
         suitableSkins.sort(() => Math.random() - 0.5);
 
-        // Берём 20 скинов (или все если меньше)
         const selectedSkins = suitableSkins.slice(0, 20);
 
-        // Если скинов меньше 20, добавляем из общего пула
         if (selectedSkins.length < 20) {
             const remaining = SKINS_POOL
                 .filter(s => !selectedSkins.includes(s))
@@ -183,10 +170,8 @@ function populateCases() {
             selectedSkins.push(...remaining);
         }
 
-        // Сортируем по цене
         selectedSkins.sort((a, b) => a.price - b.price);
 
-        // Заменяем items в кейсе
         caseItem.items = selectedSkins.map(s => ({ ...s }));
     });
 }
