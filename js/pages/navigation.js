@@ -8,6 +8,7 @@ function navigateTo(page) {
     pageOpening.style.display = 'none';
     pageInventory.style.display = 'none';
     pageUpgrade.style.display = 'none';
+    pageContracts.style.display = 'none';
     showcaseSection.style.display = 'none';
 
     if (page === 'cases') {
@@ -20,6 +21,9 @@ function navigateTo(page) {
         pageUpgrade.style.display = 'block';
         upgradeResult.style.display = 'none';
         renderUpgradeSlots();
+    } else if (page === 'contracts') {
+        pageContracts.style.display = 'block';
+        renderContracts();
     }
 }
 
