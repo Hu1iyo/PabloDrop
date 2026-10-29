@@ -11,6 +11,7 @@ async function refreshMarketViews() {
 	renderCases();
 	if (currentPage === 'inventory') renderInventory();
 	if (currentPage === 'upgrade') updateUpgradeUI();
+	if (currentPage === 'contracts') renderContracts();
 	if (currentCase) refreshOpeningMarketPrices();
 }
 

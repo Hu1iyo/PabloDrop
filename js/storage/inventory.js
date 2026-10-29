@@ -14,6 +14,7 @@ function addToInventory(item) {
         id: Date.now() + Math.random(),
         name: item.name,
         price: item.price,
+        catalogPrice: getCatalogSkinPrice(item),
         rarity: item.rarity,
         image: item.image || null,
         imageIsExact: item.imageIsExact !== false,
@@ -36,12 +37,13 @@ function removeFromInventory(itemId) {
 
 function sortInventory(inv, sortBy) {
     const sorted = [...inv];
+    const getSortPrice = item => Number.isFinite(item.price) ? item.price : getCatalogSkinPrice(item) || 0;
     switch (sortBy) {
         case 'price-desc':
-            sorted.sort((a, b) => b.price - a.price);
+            sorted.sort((a, b) => getSortPrice(b) - getSortPrice(a));
             break;
         case 'price-asc':
-            sorted.sort((a, b) => a.price - b.price);
+            sorted.sort((a, b) => getSortPrice(a) - getSortPrice(b));
             break;
         case 'rarity':
             sorted.sort((a, b) => RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity));

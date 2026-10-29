@@ -1,7 +1,19 @@
 const SKIN_MARKET_STORAGE_KEY = 'pabloSkinMarketCache';
 const SKIN_MARKET_MAX_AGE_MS = 5 * 60 * 1000;
 const SKIN_MARKET_DATA = {};
+const CATALOG_SKIN_PRICES = CASES.flatMap(caseItem => caseItem.items).reduce((prices, item) => {
+    if (!prices.has(item.name) && Number.isFinite(item.price) && item.price > 0) {
+        prices.set(item.name, item.price);
+    }
+    return prices;
+}, new Map());
 let skinMarketFeedAvailable = false;
+
+function getCatalogSkinPrice(item) {
+    if (Number.isFinite(item?.catalogPrice) && item.catalogPrice > 0) return item.catalogPrice;
+    if (Number.isFinite(item?.price) && item.price > 0) return item.price;
+    return CATALOG_SKIN_PRICES.get(item?.name) || null;
+}
 
 function getDisplaySkinName(name) {
     return name.replace(/\s*(?:\(Factory New\)|FN)$/i, '');
@@ -16,9 +28,11 @@ function isMarketPriceAvailable(item) {
 
 function getMarketSkin(item) {
     const market = SKIN_MARKET_DATA[item.name];
+    const catalogPrice = getCatalogSkinPrice(item);
     if (!market) {
         return {
             ...item,
+            catalogPrice,
             price: null,
             priceFeedAvailable: skinMarketFeedAvailable,
             marketPriceAvailable: false,
@@ -27,6 +41,7 @@ function getMarketSkin(item) {
 
     return {
         ...item,
+        catalogPrice,
         price: Number.isFinite(market.price) && market.price > 0 ? market.price : null,
         image: market.image || item.image || null,
         imageIsExact: market.imageIsExact !== false,
@@ -132,6 +147,10 @@ function skinImageMarkup(item, className = 'skin-art') {
 
 function marketPriceMarkup(item, className = 'skin-market-price') {
     if (!isMarketPriceAvailable(item)) {
+        if (Number.isFinite(item?.catalogPrice) && item.catalogPrice > 0) {
+            const price = `${formatMoney(item.catalogPrice)} ₽`;
+            return `<span class="${className} market-price-estimate" title="Ориентировочная цена по каталогу; рыночной котировки нет" aria-label="${price}, ориентировочная цена по каталогу">${price}</span>`;
+        }
         const note = item.priceFeedAvailable === false ? 'цены временно недоступны' : 'нет котировки';
         return `<span class="${className} market-price-unavailable">Цена недоступна<small>${note}</small></span>`;
     }

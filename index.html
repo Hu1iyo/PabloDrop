@@ -19,7 +19,7 @@
                 <a href="#" class="nav-link active" data-page="cases">Кейсы</a>
                 <a href="#" class="nav-link" data-page="inventory">Инвентарь</a>
                 <a href="#" class="nav-link" data-page="upgrade">Апгрейд</a>
-                <a href="#" class="nav-link">Контракты</a>
+                <a href="#" class="nav-link" data-page="contracts">Контракты</a>
             </nav>
             <div class="header-right">
     <div class="balance-box" id="balance-box" style="display:none;">
@@ -210,6 +210,59 @@
             </div>
             <div class="upgrade-result" id="upgrade-result" style="display:none;"></div>
         </section>
+        <section class="page-contracts" id="page-contracts" style="display:none;">
+            <div class="contracts-header">
+                <h2>Контракты</h2>
+                <p>Объедини от 3 до 10 предметов или добавь баланс, чтобы повысить ценность награды.</p>
+            </div>
+            <div class="contracts-summary">
+                <span>Выбрано: <strong id="contract-count">0 / 10</strong></span>
+                <span>Сумма предметов: <strong id="contract-total">0 ₽</strong></span>
+                <span>С учётом баланса: <strong id="contract-effective-total">0 ₽</strong></span>
+                <span>Награда: <strong id="contract-range">—</strong></span>
+            </div>
+            <div class="contract-slots-heading">Предметы контракта</div>
+            <div class="contract-slots" id="contract-slots"></div>
+            <div class="contract-inventory-heading">Мои предметы</div>
+            <div class="contract-inventory" id="contract-inventory"></div>
+            <div class="contract-empty" id="contract-empty" style="display:none;">В инвентаре нет предметов для контракта.</div>
+            <div class="contract-options">
+                <label class="contract-target-control" for="contract-target">
+                    Цель награды
+                    <select id="contract-target">
+                        <option value="random">Случайная</option>
+                        <option value="rifle">Штурмовая винтовка</option>
+                        <option value="pistol">Пистолет</option>
+                        <option value="sniper">Снайперская винтовка</option>
+                        <option value="smg">Пистолет-пулемёт</option>
+                        <option value="shotgun">Дробовик</option>
+                        <option value="machinegun">Пулемёт</option>
+                        <option value="knife">Нож</option>
+                        <option value="glove">Перчатки</option>
+                    </select>
+                </label>
+                <div class="contract-balance-control">
+                    <label><input type="checkbox" id="contract-use-balance"> Добавить баланс</label>
+                    <div class="contract-balance-input-wrap">
+                        <input type="number" id="contract-balance-amount" min="0" step="1" value="0" disabled>
+                        <span>₽</span>
+                    </div>
+                    <small>Доступно: <span id="contract-balance-available">0 ₽</span></small>
+                </div>
+                <div class="contract-status" id="contract-status" aria-live="polite"></div>
+            </div>
+            <div class="contract-footer">
+                <div class="contract-signature">
+                    <div class="contract-signature-heading">
+                        <label for="contract-signature-canvas">Роспись от руки</label>
+                        <button type="button" id="contract-signature-clear" title="Очистить роспись" aria-label="Очистить роспись">Очистить</button>
+                    </div>
+                    <canvas id="contract-signature-canvas" width="300" height="90" aria-label="Поле для рукописной росписи"></canvas>
+                </div>
+                <button type="button" class="btn-contract" id="contract-submit" disabled>Заключить контракт</button>
+            </div>
+            <div class="contract-result" id="contract-result" aria-live="polite"></div>
+        </section>
     </main>
 
     <footer class="footer">
@@ -368,6 +421,7 @@
     <script src="js/pages/opening.js"></script>
     <script src="js/pages/inventory.js"></script>
     <script src="js/pages/upgrade.js"></script>
+    <script src="js/pages/contracts.js"></script>
 </body>
 <script src="js/script.js"></script>
 </html>

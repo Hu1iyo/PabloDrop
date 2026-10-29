@@ -50,6 +50,7 @@
 
 .market-price-unavailable { color: var(--text-dim); }
 .market-price-unavailable small { color: var(--red); }
+.market-price-estimate { color: inherit; }
 
 .showcase-item .skin-art {
     width: 116px;
