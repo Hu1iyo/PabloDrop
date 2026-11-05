@@ -61,13 +61,18 @@ function updateUpgradeUI() {
 
     if (hasPricedSources && sourceTotal > 0) {
         let targetPrice;
-        if (selectedChance) {
+        if (selectedUpgradeTarget) {
+            const selectedTarget = getMarketSkin(selectedUpgradeTarget);
+            upgradeTarget = isMarketPriceAvailable(selectedTarget) && selectedTarget.price > sourceTotal
+                ? selectedTarget
+                : null;
+        } else if (selectedChance) {
             targetPrice = sourceTotal / ((selectedChance / 100) / (1 - HOUSE_EDGE));
+            upgradeTarget = findBestSkin(targetPrice);
         } else {
             targetPrice = sourceTotal * selectedMultiplier;
+            upgradeTarget = findBestSkin(targetPrice);
         }
-
-        upgradeTarget = findBestSkin(targetPrice);
 
         if (upgradeTarget) {
             upgradeChance = calculateUpgradeChance(sourceTotal, upgradeTarget.price);
@@ -82,13 +87,12 @@ function updateUpgradeUI() {
             slotTarget.classList.add('has-item');
             infoTarget.textContent = `${getDisplaySkinName(upgradeTarget.name)} — ${formatMoney(upgradeTarget.price)} ₽`;
         } else {
-            upgradeTarget = null;
             upgradeChance = 0;
             slotTargetContent.innerHTML = `
                 <div class="slot-placeholder">
-                    <div class="slot-icon"></div>
-                    <div class="slot-title">Нет подходящих скинов</div>
-                    <div class="slot-subtitle">Выбери больше скинов</div>
+                    <div class="slot-icon">${selectedUpgradeTarget ? '🎯' : ''}</div>
+                    <div class="slot-title">${selectedUpgradeTarget ? 'Выбранный скин дешевле исходных' : 'Нет подходящих скинов'}</div>
+                    <div class="slot-subtitle">${selectedUpgradeTarget ? 'Выбери другую цель' : 'Выбери больше скинов'}</div>
                 </div>
             `;
             slotTarget.classList.remove('has-item');
@@ -120,6 +124,7 @@ function updateUpgradeUI() {
     void chancePointer.offsetWidth;
 
     btnSelectSource.disabled = isUpgrading;
+    btnSelectTarget.disabled = isUpgrading || upgradeSourceItems.length === 0 || !hasPricedSources;
     document.querySelectorAll('.mult-btn, .quick-btn').forEach(button => {
         button.disabled = isUpgrading;
     });
@@ -127,7 +132,9 @@ function updateUpgradeUI() {
 }
 
 function renderUpgradeSlots() {
-    if (!document.querySelector('.mult-btn.active') && !document.querySelector('.quick-btn.active')) {
+    if (!selectedUpgradeTarget
+        && !document.querySelector('.mult-btn.active')
+        && !document.querySelector('.quick-btn.active')) {
         document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
         const defaultBtn = document.querySelector('.mult-btn[data-mult="2"]');

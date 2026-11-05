@@ -1,9 +1,13 @@
 let casesScrollPosition = 0;
+let openingIsFree = false;
+let completedOpeningSessions = 0;
+let caseOpeningCompleted = false;
 
 function updateOpenButtonPrice() {
     if (!currentCase) return;
-    const total = currentCase.price * openQuantity;
-    openPrice.textContent = formatMoney(total) + ' ₽';
+    const total = openingIsFree ? 0 : currentCase.price * openQuantity;
+    openPrice.textContent = openingIsFree ? 'БЕСПЛАТНО' : formatMoney(total) + ' ₽';
+    openBtn.querySelector('span').textContent = openingIsFree ? 'Открыть' : 'Открыть за';
     const hasPricedDrops = currentCase.items.some(isMarketPriceAvailable);
     openBtn.disabled = isSpinning || !hasPricedDrops;
     openBtn.title = hasPricedDrops ? '' : 'Открытие недоступно: нет свежих рыночных котировок';
@@ -34,17 +38,21 @@ document.querySelectorAll('.qty-btn').forEach(btn => {
     });
 });
 
-function openCasePage(caseId) {
+function openCasePage(caseId, options = {}) {
     currentCase = CASES.find(c => c.id === caseId);
     if (!currentCase) return;
 
+    openingIsFree = options.free === true;
     casesScrollPosition = window.scrollY;
     caseTitle.textContent = currentCase.name;
-    casePrice.textContent = currentCase.price + ' ₽';
+    casePrice.textContent = openingIsFree ? 'Ежедневный бесплатный кейс' : currentCase.price + ' ₽';
     caseEmoji.innerHTML = caseArtworkMarkup(currentCase, 'opening');
     openQuantity = 1;
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.qty-btn[data-qty="1"]').classList.add('active');
+    document.querySelectorAll('.qty-btn').forEach(button => {
+        button.disabled = openingIsFree && button.dataset.qty !== '1';
+    });
     updateOpenButtonPrice();
 
     refreshOpeningMarketPrices();
@@ -60,13 +68,42 @@ function openCasePage(caseId) {
 backBtn.addEventListener('click', goHome);
 
 function goHome() {
+    if (caseOpeningCompleted) {
+        completedOpeningSessions += 1;
+        caseOpeningCompleted = false;
+        if (completedOpeningSessions >= 3 && typeof YandexAds !== 'undefined') {
+            YandexAds.showInterstitial().then(wasShown => {
+                if (wasShown) completedOpeningSessions = 0;
+            });
+        }
+    }
     pageOpening.style.display = 'none';
     pageCases.style.display = 'block';
     showcaseSection.style.display = 'block';
     currentCase = null;
+    openingIsFree = false;
+    document.querySelectorAll('.qty-btn').forEach(button => {
+        button.disabled = false;
+    });
     rouletteMulti.innerHTML = '';
     resultsContainer.innerHTML = '';
     window.scrollTo(0, casesScrollPosition);
+}
+
+function openDailyFreeCase() {
+    if (!YandexDaily.canGetFreeCase()) {
+        showToast('Бесплатный кейс ещё восстанавливается');
+        renderDailyPanel();
+        return;
+    }
+    const availableCases = CASES
+        .filter(caseItem => caseItem.items.some(isMarketPriceAvailable))
+        .sort((first, second) => first.price - second.price);
+    if (availableCases.length === 0) {
+        showToast('Кейсы временно недоступны. Попробуй позже.');
+        return;
+    }
+    openCasePage(availableCases[0].id, { free: true });
 }
 
 openBtn.addEventListener('click', () => {
@@ -82,7 +119,12 @@ openBtn.addEventListener('click', () => {
         return;
     }
 
-    const totalPrice = currentCase.price * openQuantity;
+    if (openingIsFree && !YandexDaily.canGetFreeCase()) {
+        showToast('Бесплатный кейс уже использован');
+        goHome();
+        return;
+    }
+    const totalPrice = openingIsFree ? 0 : currentCase.price * openQuantity;
 
     if (balance < totalPrice) {
         resultsContainer.innerHTML = `
@@ -97,6 +139,11 @@ openBtn.addEventListener('click', () => {
     openBtn.disabled = true;
     balance -= totalPrice;
     updateBalance();
+    if (openingIsFree) {
+        YandexDaily.markFreeCaseUsed();
+        YandexPlayer.saveToCloud();
+        renderDailyPanel();
+    }
     resultsContainer.innerHTML = '';
     rouletteMulti.innerHTML = '';
 
@@ -166,7 +213,12 @@ openBtn.addEventListener('click', () => {
             resultsContainer.appendChild(resultBox);
         });
 
-        updatePlayerStats(totalPrice, 0);
+        updatePlayerStats(totalPrice, 0, openQuantity);
+        if (typeof YandexQuests !== 'undefined') YandexQuests.track('casesOpened', openQuantity);
+        if (typeof YandexLeaderboards !== 'undefined') YandexLeaderboards.submitScore();
+        if (typeof renderQuestsPanel === 'function') renderQuestsPanel();
+        if (typeof renderLevelPanel === 'function') renderLevelPanel();
+        caseOpeningCompleted = true;
         console.log(`House profit: ${getHouseProfit().toFixed(2)} ₽ (открыто ${openQuantity} кейсов)`);
     }, totalDuration);
 });

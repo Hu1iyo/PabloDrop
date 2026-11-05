@@ -1,32 +1,70 @@
+let skinSelectMode = 'source';
+let targetSkinOptions = [];
+
 function openSkinSelectModal() {
     if (isUpgrading) return;
+    skinSelectMode = 'source';
     skinSelectModal.style.display = 'flex';
     skinSearch.value = '';
     skinModalTitle.textContent = 'Выбери скины из инвентаря';
     renderSkinSelectGrid();
 }
 
-function renderSkinSelectGrid(filter = '') {
-    let skins = getInventory().map(i => ({ ...i, fromInventory: true }));
-    const searchTerm = filter.trim().toLowerCase();
+function openTargetSkinSelectModal() {
+    if (isUpgrading || upgradeSourceItems.length === 0) return;
+    skinSelectMode = 'target';
+    skinSelectModal.style.display = 'flex';
+    skinSearch.value = '';
+    skinModalTitle.textContent = 'Выбери желаемый скин';
+    renderSkinSelectGrid();
+}
 
-    if (searchTerm) {
-        skins = skins.filter(s => s.name.toLowerCase().includes(searchTerm));
+function renderSkinSelectGrid(filter = '') {
+    const searchTerm = filter.trim().toLowerCase();
+    const isTargetSelection = skinSelectMode === 'target';
+    const sourceTotal = upgradeSourceItems.reduce((total, item) => total + getMarketSkin(item).price, 0);
+    let skins;
+
+    if (isTargetSelection) {
+        targetSkinOptions = getShopSkins()
+            .map(getMarketSkin)
+            .filter(skin => isMarketPriceAvailable(skin)
+                && skin.price > sourceTotal
+                && !upgradeSourceItems.some(source => source.name === skin.name));
+        skins = targetSkinOptions.filter(skin => getDisplaySkinName(skin.name).toLowerCase().includes(searchTerm));
+    } else {
+        skins = getInventory().map(i => ({ ...i, fromInventory: true }));
+        if (searchTerm) {
+            skins = skins.filter(s => s.name.toLowerCase().includes(searchTerm));
+        }
     }
 
-    skinSelectCount.textContent = `Выбрано: ${upgradeSourceItems.length}`;
+    skinSelectCount.textContent = isTargetSelection
+        ? `Доступно: ${targetSkinOptions.length}`
+        : `Выбрано: ${upgradeSourceItems.length}`;
     if (skins.length === 0) {
         skinSelectGrid.innerHTML = `
             <div style="text-align:center; color:var(--text-dim); padding:40px; grid-column:1/-1;">
-                <div style="font-size:40px; margin-bottom:10px;">${searchTerm ? '🔎' : '📦'}</div>
-                <div style="font-size:16px; font-weight:700; margin-bottom:5px;">${searchTerm ? 'Ничего не найдено' : 'Инвентарь пуст'}</div>
-                <div style="font-size:13px;">${searchTerm ? 'Измени запрос поиска' : 'Открой кейсы, чтобы получить скины'}</div>
+                <div style="font-size:40px; margin-bottom:10px;">${searchTerm ? '🔎' : isTargetSelection ? '🎯' : '📦'}</div>
+                <div style="font-size:16px; font-weight:700; margin-bottom:5px;">${searchTerm ? 'Ничего не найдено' : isTargetSelection ? 'Нет подходящих скинов' : 'Инвентарь пуст'}</div>
+                <div style="font-size:13px;">${searchTerm ? 'Измени запрос поиска' : isTargetSelection ? 'Нужен скин дороже выбранных предметов' : 'Открой кейсы, чтобы получить скины'}</div>
             </div>
         `;
         return;
     }
 
     skinSelectGrid.innerHTML = skins.map(s => {
+        if (isTargetSelection) {
+            const optionIndex = targetSkinOptions.indexOf(s);
+            return `
+                <button type="button" class="skin-option" data-target-index="${optionIndex}">
+                    ${skinImageMarkup(s, 'skin-art')}
+                    <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
+                    ${marketPriceMarkup(s, 'skin-option-price')}
+                    <div class="skin-option-rarity">${RARITY_NAMES[s.rarity]}</div>
+                </button>
+            `;
+        }
         const isSelected = upgradeSourceItems.some(i => i.id === s.id);
         const marketSkin = getMarketSkin(s);
         return `
@@ -43,7 +81,18 @@ function renderSkinSelectGrid(filter = '') {
     }).join('');
 
     skinSelectGrid.querySelectorAll('.skin-option').forEach(opt => {
+        if (isTargetSelection) {
+            opt.addEventListener('click', () => {
+                selectedUpgradeTarget = targetSkinOptions[Number(opt.dataset.targetIndex)] || null;
+                document.querySelectorAll('.mult-btn, .quick-btn').forEach(button => button.classList.remove('active'));
+                selectedMultiplier = null;
+                selectedChance = null;
+                closeSkinSelectModal();
+                updateUpgradeUI();
+            });
+        } else {
             opt.addEventListener('click', () => selectSkin(opt));
+        }
     });
 }
 
@@ -77,6 +126,7 @@ slotSourceContent.addEventListener('click', (event) => {
 });
 
 btnSelectSource.addEventListener('click', openSkinSelectModal);
+btnSelectTarget.addEventListener('click', openTargetSkinSelectModal);
 skinModalClose.addEventListener('click', closeSkinSelectModal);
 skinSelectDone.addEventListener('click', closeSkinSelectModal);
 skinSelectModal.querySelector('.modal-backdrop').addEventListener('click', closeSkinSelectModal);
@@ -88,6 +138,7 @@ document.querySelectorAll('.mult-btn').forEach(btn => {
         document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        selectedUpgradeTarget = null;
         selectedMultiplier = parseInt(btn.dataset.mult);
         selectedChance = null;
         updateUpgradeUI();
@@ -100,6 +151,7 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
         document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.mult-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        selectedUpgradeTarget = null;
         selectedChance = parseFloat(btn.dataset.chance);
         selectedMultiplier = null;
         updateUpgradeUI();
@@ -142,6 +194,8 @@ btnUpgrade.addEventListener('click', () => {
         isUpgrading = false;
         btnUpgrade.classList.remove('spinning');
 
+        if (typeof YandexQuests !== 'undefined') YandexQuests.track('upgrades', 1);
+
         if (won) {
             addToInventory({
                 ...upgradeTarget
@@ -157,6 +211,7 @@ btnUpgrade.addEventListener('click', () => {
             upgradeSourceItems = [];
         }
 
+        if (typeof renderQuestsPanel === 'function') renderQuestsPanel();
         updateUpgradeUI();
     }, 4700);
 });

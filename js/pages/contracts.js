@@ -212,6 +212,9 @@ contractSubmit.addEventListener('click', () => {
     }
     saveInventory(inventory.filter(item => !selectedIds.has(item.id)));
     addToInventory(reward);
+    if (typeof YandexQuests !== 'undefined') YandexQuests.track('contracts', 1);
+    if (typeof YandexLeaderboards !== 'undefined') YandexLeaderboards.submitScore();
+    if (typeof renderQuestsPanel === 'function') renderQuestsPanel();
     contractSelectedIds.clear();
     contractUseBalance.checked = false;
     contractBalanceAmount.disabled = true;

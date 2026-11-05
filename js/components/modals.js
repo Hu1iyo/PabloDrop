@@ -32,6 +32,9 @@ modalConfirm.addEventListener('click', () => {
     removeFromInventory(currentItem.id);
     upgradeSourceItems = upgradeSourceItems.filter(i => i.id !== currentItem.id);
     if (currentPage === 'upgrade') updateUpgradeUI();
+    if (typeof YandexQuests !== 'undefined') YandexQuests.track('sold', 1);
+    if (typeof YandexLeaderboards !== 'undefined') YandexLeaderboards.submitScore();
+    if (typeof renderQuestsPanel === 'function') renderQuestsPanel();
     closeSellModal();
     renderInventory();
 });

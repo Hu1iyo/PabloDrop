@@ -1,5 +1,6 @@
 const SKIN_MARKET_STORAGE_KEY = 'pabloSkinMarketCache';
 const SKIN_MARKET_MAX_AGE_MS = 5 * 60 * 1000;
+const IS_YANDEX_GAME_HOST = /(^|\.)yandex\.(ru|net|com)$/i.test(location.hostname);
 const SKIN_MARKET_DATA = {};
 const CATALOG_SKIN_PRICES = CASES.flatMap(caseItem => caseItem.items).reduce((prices, item) => {
     if (!prices.has(item.name) && Number.isFinite(item.price) && item.price > 0) {
@@ -30,19 +31,26 @@ function getMarketSkin(item) {
     const market = SKIN_MARKET_DATA[item.name];
     const catalogPrice = getCatalogSkinPrice(item);
     if (!market) {
+        const useCatalogPrice = IS_YANDEX_GAME_HOST && Number.isFinite(catalogPrice) && catalogPrice > 0;
         return {
             ...item,
             catalogPrice,
-            price: null,
+            price: useCatalogPrice ? catalogPrice : null,
             priceFeedAvailable: skinMarketFeedAvailable,
-            marketPriceAvailable: false,
+            marketPriceAvailable: useCatalogPrice,
+            marketPriceSource: useCatalogPrice ? 'catalog' : null,
         };
     }
 
+    const marketPrice = Number.isFinite(market.price) && market.price > 0 ? market.price : null;
+    const useCatalogPrice = !marketPrice
+        && IS_YANDEX_GAME_HOST
+        && Number.isFinite(catalogPrice)
+        && catalogPrice > 0;
     return {
         ...item,
         catalogPrice,
-        price: Number.isFinite(market.price) && market.price > 0 ? market.price : null,
+        price: marketPrice || (useCatalogPrice ? catalogPrice : null),
         image: market.image || item.image || null,
         imageIsExact: market.imageIsExact !== false,
         imageSourceName: market.imageSourceName || item.imageSourceName || null,
@@ -51,7 +59,8 @@ function getMarketSkin(item) {
         marketName: market.marketName,
         marketUrl: market.marketUrl,
         marketPriceUpdatedAt: market.priceUpdatedAt,
-        marketPriceAvailable: Number.isFinite(market.price) && market.price > 0,
+        marketPriceAvailable: Boolean(marketPrice || useCatalogPrice),
+        marketPriceSource: marketPrice ? 'skinport' : useCatalogPrice ? 'catalog' : null,
     };
 }
 
@@ -84,16 +93,25 @@ function applyCachedMarketData() {
         const cached = JSON.parse(localStorage.getItem(SKIN_MARKET_STORAGE_KEY));
         if (!isFreshMarketSnapshot(cached)) {
             localStorage.removeItem(SKIN_MARKET_STORAGE_KEY);
+            if (IS_YANDEX_GAME_HOST) applyMarketSnapshot({ items: {}, pricesAvailable: false });
             return false;
         }
         applyMarketSnapshot(cached);
         return true;
     } catch {
+        if (IS_YANDEX_GAME_HOST) applyMarketSnapshot({ items: {}, pricesAvailable: false });
         return false;
     }
 }
 
 async function refreshMarketData() {
+    if (IS_YANDEX_GAME_HOST) {
+        if (!applyCachedMarketData()) {
+            applyMarketSnapshot({ items: {}, pricesAvailable: false });
+        }
+        return false;
+    }
+
     const names = [...new Set(CASES.flatMap(caseItem => caseItem.items.map(item => item.name)))];
     try {
         const response = await fetch('/api/market-data', {
@@ -146,6 +164,10 @@ function skinImageMarkup(item, className = 'skin-art') {
 }
 
 function marketPriceMarkup(item, className = 'skin-market-price') {
+    if (item?.marketPriceSource === 'catalog' && Number.isFinite(item.price) && item.price > 0) {
+        const price = `${formatMoney(item.price)} ₽`;
+        return `<span class="${className} market-price-estimate" title="Внутриигровая оценка по каталогу; это не рыночная котировка">${price}<small>игровая цена</small></span>`;
+    }
     if (!isMarketPriceAvailable(item)) {
         if (Number.isFinite(item?.catalogPrice) && item.catalogPrice > 0) {
             const price = `${formatMoney(item.catalogPrice)} ₽`;

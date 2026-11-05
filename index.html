@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PABLOdrop — Открытие кейсов</title>
+    <meta name="description" content="Открывай кейсы CS2, собирай виртуальную коллекцию скинов и выполняй ежедневные задания.">
+    <meta name="theme-color" content="#0a0a0f">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/pablo-icon.svg">
+    <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/yandex.css">
 </head>
 <body>
 
@@ -27,14 +31,13 @@
         <span class="balance-amount" id="balance">0.00</span>
         <span class="balance-currency">₽</span>
     </div>
-    <button class="btn-deposit" id="btn-deposit" style="display:none;">+ Пополнить</button>
+    <button class="btn-deposit" id="btn-deposit" style="display:none;">🎬 Монеты</button>
     <div class="user-menu" id="user-menu">
-        <button class="btn-login" id="btn-login">Войти</button>
+        <button class="btn-login" id="btn-login">Сохранить прогресс</button>
         <div class="user-profile" id="user-profile" style="display:none;">
             <div class="user-avatar" id="user-avatar">U</div>
             <div class="user-dropdown">
                 <div class="user-name" id="user-name">User</div>
-                <button class="btn-logout" id="btn-logout">Выйти</button>
             </div>
         </div>
     </div>
@@ -42,20 +45,28 @@
     </header>
 
     <main>
-        <!-- SHOWCASE -->
-        <section class="showcase" id="showcase-section">
-            <div class="showcase-label">🔥 Лучшие дропы сообщества</div>
-            <div class="showcase-roulette">
-                <div class="showcase-mask showcase-mask-left"></div>
-                <div class="showcase-mask showcase-mask-right"></div>
-                <div class="showcase-track" id="showcase-track"></div>
-            </div>
-        </section>
+        <section class="page-cases" id="page-cases">
+            <!-- SHOWCASE -->
+            <section class="showcase" id="showcase-section">
+                <div class="showcase-label">🔥 Лучшие дропы сообщества</div>
+                <div class="showcase-roulette">
+                    <div class="showcase-mask showcase-mask-left"></div>
+                    <div class="showcase-mask showcase-mask-right"></div>
+                    <div class="showcase-track" id="showcase-track"></div>
+                </div>
+            </section>
 
-        <!-- КЕЙСЫ (должна быть!) -->
-    <section class="page-cases" id="page-cases">
-        <div id="categories-container"></div>
-    </section>
+            <section class="yandex-level-panel" id="level-panel" aria-label="Прогресс игрока"></section>
+
+            <!-- YANDEX PANELS -->
+            <section class="yandex-panels" id="yandex-panels">
+                <div class="yandex-panel" id="daily-panel"></div>
+                <div class="yandex-panel" id="quests-panel"></div>
+                <div class="yandex-panel" id="leaderboard-panel"></div>
+            </section>
+
+            <div id="categories-container"></div>
+        </section>
 
         <!-- OPENING -->
         <section class="page-opening" id="page-opening" style="display:none;">
@@ -189,7 +200,7 @@
                             <div class="slot-subtitle">Выбери режим</div>
                         </div>
                     </div>
-                    <button class="slot-select-btn" id="btn-select-target" style="display:none;">Выбрать</button>
+                    <button class="slot-select-btn" id="btn-select-target" type="button">Выбрать скин</button>
                 </div>
             </div>
             <div class="upgrade-bottom">
@@ -282,6 +293,8 @@
     </footer>
 
     <!-- МОДАЛКИ -->
+    <div id="toast-container" class="toast-container"></div>
+
     <div class="modal" id="sell-modal" style="display:none;">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
@@ -301,37 +314,19 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content deposit-modal">
             <button class="modal-close" id="deposit-close">×</button>
-            <div class="modal-icon">💳</div>
-            <h3 class="modal-title">Пополнение баланса</h3>
+            <div class="modal-icon">🎬</div>
+            <h3 class="modal-title">Получить монеты</h3>
+            <p class="deposit-subtitle">Смотри рекламу и получай монеты бесплатно. Никаких реальных платежей.</p>
             <div class="deposit-amounts">
-                <button class="amount-btn" data-amount="100">100 ₽</button>
-                <button class="amount-btn" data-amount="500">500 ₽</button>
-                <button class="amount-btn" data-amount="1000">1 000 ₽</button>
-                <button class="amount-btn" data-amount="5000">5 000 ₽</button>
-                <button class="amount-btn" data-amount="10000">10 000 ₽</button>
-                <button class="amount-btn" data-amount="50000">50 000 ₽</button>
-            </div>
-            <div class="deposit-custom">
-                <label>Или введите сумму:</label>
-                <div class="deposit-input-wrap">
-                    <input type="number" id="deposit-input" placeholder="0" min="1">
-                    <span class="deposit-currency">₽</span>
-                </div>
-            </div>
-            <div class="deposit-methods">
-                <div class="method-title">Способ оплаты:</div>
-                <div class="methods-grid">
-                    <button class="method-btn active" data-method="card">💳 Карта</button>
-                    <button class="method-btn" data-method="sbp">🏦 СБП</button>
-                    <button class="method-btn" data-method="crypto">₿ Крипта</button>
-                    <button class="method-btn" data-method="skins">🎮 Скины</button>
-                </div>
+                <button class="amount-btn active" data-amount="1000">🎬 +1 000 ₽</button>
+                <button class="amount-btn" data-amount="2500">🎬 +2 500 ₽</button>
+                <button class="amount-btn" data-amount="5000">🎬 +5 000 ₽</button>
             </div>
             <div class="deposit-total">
-                <span>К зачислению:</span>
-                <span class="deposit-total-value" id="deposit-total">0 ₽</span>
+                <span>Будет зачислено:</span>
+                <span class="deposit-total-value" id="deposit-total">1 000 ₽</span>
             </div>
-            <button class="btn-confirm btn-deposit-confirm" id="deposit-confirm">Пополнить</button>
+            <button class="btn-confirm btn-deposit-confirm" id="deposit-confirm">Смотреть рекламу</button>
         </div>
     </div>
 
@@ -349,56 +344,14 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА АВТОРИЗАЦИИ -->
-<div class="modal" id="auth-modal" style="display:none;">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content auth-modal">
-        <button class="modal-close" id="auth-close">×</button>
-        <div class="auth-tabs">
-            <button class="auth-tab active" data-tab="login">Вход</button>
-            <button class="auth-tab" data-tab="register">Регистрация</button>
-        </div>
-
-        <!-- ВХОД -->
-        <form class="auth-form" id="login-form">
-            <div class="auth-field">
-                <label>Ник</label>
-                <input type="text" id="login-username" placeholder="Введите логин" required>
-            </div>
-            <div class="auth-field">
-                <label>Пароль</label>
-                <input type="password" id="login-password" placeholder="Введите пароль" required>
-            </div>
-            <div class="auth-error" id="login-error"></div>
-            <button type="submit" class="btn-auth-submit">Войти</button>
-        </form>
-
-        <!-- РЕГИСТРАЦИЯ -->
-        <form class="auth-form" id="register-form" style="display:none;">
-            <div class="auth-field">
-                <label>Ник</label>
-                <input type="text" id="reg-username" placeholder="Придумайте логин" minlength="3" required>
-            </div>
-            <div class="auth-field">
-                <label>Почта</label>
-                <input type="email" id="reg-email" placeholder="Введите почту" maxlength="254" required>
-            </div>
-            <div class="auth-field">
-                <label>Пароль</label>
-                <input type="password" id="reg-password" placeholder="Придумайте пароль" minlength="8" maxlength="128" required>
-            </div>
-            <div class="auth-field">
-                <label>Повторите пароль</label>
-                <input type="password" id="reg-password2" placeholder="Повторите пароль" required>
-            </div>
-            <div class="auth-error" id="reg-error"></div>
-            <button type="submit" class="btn-auth-submit">Зарегистрироваться</button>
-        </form>
-    </div>
-</div>
-
-
     <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ (порядок важен!) -->
+    <script src="js/yandex/sdk.js"></script>
+    <script src="js/yandex/ads.js"></script>
+    <script src="js/yandex/player.js"></script>
+    <script src="js/yandex/leaderboards.js"></script>
+    <script src="js/yandex/daily.js"></script>
+    <script src="js/yandex/quests.js"></script>
+    <script src="js/yandex/ui.js"></script>
     <script src="js/dom.js"></script>
     <script src="js/data/rarity.js"></script>
     <script src="js/data/cases.js"></script>
@@ -422,6 +375,7 @@
     <script src="js/pages/inventory.js"></script>
     <script src="js/pages/upgrade.js"></script>
     <script src="js/pages/contracts.js"></script>
+    <script src="js/yandex/boot.js"></script>
+    <script src="js/script.js"></script>
 </body>
-<script src="js/script.js"></script>
 </html>

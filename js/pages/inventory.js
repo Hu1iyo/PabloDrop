@@ -64,6 +64,9 @@ sellAllBtn.addEventListener('click', () => {
     saveInventory(inv.filter(item => !soldIds.has(item.id)));
     upgradeSourceItems = upgradeSourceItems.filter(item => !soldIds.has(item.id));
     if (currentPage === 'upgrade') updateUpgradeUI();
+    if (typeof YandexQuests !== 'undefined') YandexQuests.track('sold', pricedItems.length);
+    if (typeof YandexLeaderboards !== 'undefined') YandexLeaderboards.submitScore();
+    if (typeof renderQuestsPanel === 'function') renderQuestsPanel();
     renderInventory();
 });
 

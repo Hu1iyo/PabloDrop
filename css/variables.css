@@ -1,3 +1,11 @@
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('../assets/fonts/Inter-Variable.ttf') format('truetype');
+}
+
 :root {
     --bg: #0a0a0f;
     --bg-card: #12121a;

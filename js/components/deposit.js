@@ -1,18 +1,21 @@
+// ===== ПОЛУЧЕНИЕ МОНЕТ ЗА РЕКЛАМУ =====
+// Реальные платёжные методы удалены: только rewarded-видео Yandex.
+
 const depositBtn = document.querySelector('.btn-deposit');
 const depositModal = document.getElementById('deposit-modal');
 const depositClose = document.getElementById('deposit-close');
-const depositInput = document.getElementById('deposit-input');
 const depositTotal = document.getElementById('deposit-total');
 const depositConfirm = document.getElementById('deposit-confirm');
-let selectedDepositAmount = 0;
-let selectedMethod = 'card';
+let selectedDepositAmount = 1000;
+let isProcessingAd = false;
 
 function openDepositModal() {
     depositModal.style.display = 'flex';
-    selectedDepositAmount = 0;
-    depositInput.value = '';
+    selectedDepositAmount = 1000;
     updateDepositTotal();
     document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+    const first = document.querySelector('.amount-btn[data-amount="1000"]');
+    if (first) first.classList.add('active');
 }
 
 function closeDepositModal() {
@@ -20,63 +23,56 @@ function closeDepositModal() {
 }
 
 function updateDepositTotal() {
-    const inputVal = parseInt(depositInput.value) || 0;
-    const total = selectedDepositAmount || inputVal;
+    const total = selectedDepositAmount;
     depositTotal.textContent = formatMoney(total) + ' ₽';
-    depositConfirm.disabled = total <= 0;
+    depositConfirm.disabled = total <= 0 || isProcessingAd;
 }
 
-depositBtn.addEventListener('click', openDepositModal);
-depositClose.addEventListener('click', closeDepositModal);
-depositModal.querySelector('.modal-backdrop').addEventListener('click', closeDepositModal);
+if (depositBtn) depositBtn.addEventListener('click', openDepositModal);
+if (depositClose) depositClose.addEventListener('click', closeDepositModal);
+if (depositModal) {
+    depositModal.querySelector('.modal-backdrop').addEventListener('click', closeDepositModal);
+}
 
 document.querySelectorAll('.amount-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedDepositAmount = parseInt(btn.dataset.amount);
-        depositInput.value = '';
         updateDepositTotal();
     });
 });
 
-depositInput.addEventListener('input', () => {
-    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
-    selectedDepositAmount = 0;
-    updateDepositTotal();
-});
+depositConfirm.addEventListener('click', async () => {
+    if (isProcessingAd || selectedDepositAmount <= 0) return;
 
-document.querySelectorAll('.method-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedMethod = btn.dataset.method;
-    });
-});
-
-depositConfirm.addEventListener('click', () => {
-    const inputVal = parseInt(depositInput.value) || 0;
-    const amount = selectedDepositAmount || inputVal;
-    if (amount <= 0) return;
-
-    depositConfirm.textContent = 'Обработка...';
+    isProcessingAd = true;
+    depositConfirm.textContent = 'Загрузка рекламы...';
     depositConfirm.disabled = true;
 
+    const result = await YandexAds.showRewarded();
+
+    isProcessingAd = false;
+    depositConfirm.textContent = 'Смотреть рекламу';
+    updateDepositTotal();
+
+    if (!result.rewarded) {
+        showRewardedFailure(result.reason);
+        return;
+    }
+
+    balance += selectedDepositAmount;
+    updateBalance();
+    YandexPlayer.saveToCloud();
+    closeDepositModal();
+
+    balanceEl.style.transition = 'transform 0.3s, color 0.3s';
+    balanceEl.style.color = '#00e676';
+    balanceEl.style.transform = 'scale(1.2)';
     setTimeout(() => {
-        balance += amount;
-        updateBalance();
-        closeDepositModal();
-        depositConfirm.textContent = 'Пополнить';
-        depositConfirm.disabled = false;
+        balanceEl.style.color = '';
+        balanceEl.style.transform = '';
+    }, 600);
 
-        balanceEl.style.transition = 'transform 0.3s, color 0.3s';
-        balanceEl.style.color = '#00e676';
-        balanceEl.style.transform = 'scale(1.2)';
-        setTimeout(() => {
-            balanceEl.style.color = '';
-            balanceEl.style.transform = '';
-        }, 600);
-
-        console.log(` Пополнение: +${amount} ₽ (метод: ${selectedMethod})`);
-    }, 800);
+    showToast(`+${formatMoney(selectedDepositAmount)} ₽ за просмотр рекламы 🎬`);
 });
