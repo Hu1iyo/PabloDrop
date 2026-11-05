@@ -4,7 +4,8 @@
   "description": "PABLOdrop — сайт открытия кейсов (запуск через Node.js)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "cloudflare": "node cloudflare.js"
   },
   "license": "MIT"
 }

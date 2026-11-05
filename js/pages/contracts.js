@@ -227,3 +227,4 @@ contractSubmit.addEventListener('click', () => {
 
 setupContractSignature();
 renderContracts();
+renderContracts();
