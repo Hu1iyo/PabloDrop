@@ -1,5 +1,6 @@
 let skinSelectMode = 'source';
 let targetSkinOptions = [];
+const MAX_UPGRADE_SOURCE_ITEMS = 6;
 
 function openSkinSelectModal() {
     if (isUpgrading) return;
@@ -41,7 +42,7 @@ function renderSkinSelectGrid(filter = '') {
 
     skinSelectCount.textContent = isTargetSelection
         ? `Доступно: ${targetSkinOptions.length}`
-        : `Выбрано: ${upgradeSourceItems.length}`;
+        : `Выбрано: ${upgradeSourceItems.length} / ${MAX_UPGRADE_SOURCE_ITEMS}`;
     if (skins.length === 0) {
         skinSelectGrid.innerHTML = `
             <div style="text-align:center; color:var(--text-dim); padding:40px; grid-column:1/-1;">
@@ -61,17 +62,19 @@ function renderSkinSelectGrid(filter = '') {
                     ${skinImageMarkup(s, 'skin-art')}
                     <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
                     ${marketPriceMarkup(s, 'skin-option-price')}
+                    <div class="skin-option-chance">Шанс: ${calculateUpgradeChance(sourceTotal, s.price).toFixed(2)}%</div>
                     <div class="skin-option-rarity">${RARITY_NAMES[s.rarity]}</div>
                 </button>
             `;
         }
         const isSelected = upgradeSourceItems.some(i => i.id === s.id);
         const marketSkin = getMarketSkin(s);
+        const selectionLimitReached = upgradeSourceItems.length >= MAX_UPGRADE_SOURCE_ITEMS && !isSelected;
         return `
                 <button type="button" class="skin-option ${isSelected ? 'selected' : ''}"
                      aria-pressed="${isSelected}"
                  data-name="${s.name}" data-price="${marketSkin.price}" data-rarity="${s.rarity}"
-                     data-id="${s.id}" ${isUpgrading || !isMarketPriceAvailable(marketSkin) ? 'disabled' : ''}>
+                     data-id="${s.id}" ${isUpgrading || selectionLimitReached || !isMarketPriceAvailable(marketSkin) ? 'disabled' : ''}>
                 ${skinImageMarkup(marketSkin, 'skin-art')}
                 <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
                 ${marketPriceMarkup(marketSkin, 'skin-option-price')}
@@ -105,6 +108,7 @@ function selectSkin(opt) {
     if (existing) {
         upgradeSourceItems = upgradeSourceItems.filter(i => i.id !== id);
     } else {
+        if (upgradeSourceItems.length >= MAX_UPGRADE_SOURCE_ITEMS) return;
         upgradeSourceItems.push(item);
     }
 

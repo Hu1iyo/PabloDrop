@@ -68,12 +68,12 @@ function getRandomItemAdjusted(items, casePrice) {
 
 function calculateUpgradeChance(sourceTotal, targetPrice) {
     if (!targetPrice || targetPrice <= 0) return 0;
-    let raw = (sourceTotal / targetPrice) * 100;
-    raw = raw * (1 - HOUSE_EDGE);
+    const raw = (sourceTotal / targetPrice) * 100
+        * (1 - HOUSE_EDGE)
+        * (1 - UPGRADE_HIDDEN_EDGE);
     return Math.min(raw, 95);
 }
 
 function getRealChance(displayedChance) {
-    const real = displayedChance * (1 - UPGRADE_HIDDEN_EDGE);
-    return Math.max(real, 0);
+    return Math.max(displayedChance, 0);
 }

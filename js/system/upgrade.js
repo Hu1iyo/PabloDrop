@@ -40,23 +40,23 @@ function updateUpgradeUI() {
     } else {
         slotSourceContent.innerHTML = `
             <div class="slot-selection">
-                <div class="slot-selection-heading">Выбрано: ${upgradeSourceItems.length}</div>
-                <div class="slot-selected-list">
+                <div class="slot-selection-heading">Выбрано: ${upgradeSourceItems.length} / 6</div>
+                <div class="slot-selected-list ${upgradeSourceItems.length === 1 ? 'single-item' : ''}">
                     ${upgradeSourceItems.map(item => `
                         <div class="slot-selected-item">
                             ${skinImageMarkup(item, 'skin-art slot-selected-art')}
-                            <span class="slot-selected-name" title="${getDisplaySkinName(item.name)}">${getDisplaySkinName(item.name)}</span>
                             ${marketPriceMarkup(item, 'slot-selected-price')}
+                            <span class="slot-selected-name" title="${getDisplaySkinName(item.name)}">${getDisplaySkinName(item.name)}</span>
                             <button type="button" class="slot-remove-item" data-remove-source="${item.id}"
                                 aria-label="Убрать скин из апгрейда" title="Убрать скин" ${isUpgrading ? 'disabled' : ''}>×</button>
                         </div>
                     `).join('')}
                 </div>
-                <div class="slot-selection-total">Итого: ${sourceTotal} ₽</div>
+                <div class="slot-selection-total">Итого: ${formatMoney(sourceTotal)} ₽</div>
             </div>
         `;
         slotSource.classList.add('has-item');
-        infoSource.textContent = `${sourceTotal} ₽ (${upgradeSourceItems.length} шт.)`;
+        infoSource.textContent = `${formatMoney(sourceTotal)} ₽ (${upgradeSourceItems.length} шт.)`;
     }
 
     if (hasPricedSources && sourceTotal > 0) {
@@ -67,7 +67,8 @@ function updateUpgradeUI() {
                 ? selectedTarget
                 : null;
         } else if (selectedChance) {
-            targetPrice = sourceTotal / ((selectedChance / 100) / (1 - HOUSE_EDGE));
+            targetPrice = sourceTotal / ((selectedChance / 100)
+                / ((1 - HOUSE_EDGE) * (1 - UPGRADE_HIDDEN_EDGE)));
             upgradeTarget = findBestSkin(targetPrice);
         } else {
             targetPrice = sourceTotal * selectedMultiplier;
