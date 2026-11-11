@@ -108,15 +108,6 @@
     margin: 0 0 4px;
 }
 
-.slot-selected-item {
-    grid-template-columns: 34px minmax(0, 1fr) auto 30px;
-}
-
-.slot-selected-art {
-    width: 34px;
-    height: 28px;
-}
-
 .slot-selected-price small {
     font-size: 8px;
 }

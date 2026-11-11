@@ -158,9 +158,6 @@
     justify-content: center;
     gap: 4px;
     padding: 8px;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 8px;
     text-align: center;
 }
 
@@ -170,10 +167,15 @@
 }
 
 .slot-selected-art {
-    width: min(100%, 112px);
-    height: 86px;
+    width: min(100%, 190px);
+    height: 120px;
     flex: 0 0 auto;
     object-fit: contain;
+}
+
+.slot-selected-list:not(.single-item) .slot-selected-art {
+    width: min(100%, 130px);
+    height: 84px;
 }
 
 .slot-selected-name {

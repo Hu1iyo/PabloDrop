@@ -62,7 +62,6 @@ function renderSkinSelectGrid(filter = '') {
                     ${skinImageMarkup(s, 'skin-art')}
                     <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
                     ${marketPriceMarkup(s, 'skin-option-price')}
-                    <div class="skin-option-chance">Шанс: ${calculateUpgradeChance(sourceTotal, s.price).toFixed(2)}%</div>
                     <div class="skin-option-rarity">${RARITY_NAMES[s.rarity]}</div>
                 </button>
             `;
