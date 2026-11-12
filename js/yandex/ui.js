@@ -64,7 +64,7 @@ function renderDailyPanel() {
             <div class="daily-text">
                 <div class="daily-title">Ежедневный бонус</div>
                 <div class="daily-sub">${canClaim
-                    ? `День ${dayNumber}: <b>+${reward} ₽</b>${streak > 0 ? ` · серия ${streak} 🔥` : ''}`
+                    ? `День ${dayNumber}: <b>+${formatCurrency(reward)}</b>${streak > 0 ? ` · серия ${streak} 🔥` : ''}`
                     : `Серия: ${streak} дн. · возвращайся завтра`}</div>
             </div>
             <div class="daily-actions">
@@ -83,7 +83,7 @@ function renderDailyPanel() {
         btn.addEventListener('click', () => {
             const result = YandexDaily.claim();
             if (result.success) {
-                showToast(`+${result.reward} ₽ · Серия ${result.streak} дн. 🔥`);
+                showToast(`+${formatCurrency(result.reward)} · Серия ${result.streak} дн. 🔥`);
                 YandexPlayer.saveToCloud();
                 renderDailyPanel();
             }
@@ -147,7 +147,7 @@ function renderQuestsPanel() {
                         </div>
                     </div>
                     <button class="quest-claim" data-quest="${q.id}" ${q.completed && !q.claimed ? '' : 'disabled'}>
-                        ${q.claimed ? '✓' : `+${q.reward} ₽`}
+                        ${q.claimed ? '✓' : `+${formatCurrency(q.reward)}`}
                     </button>
                 </div>`;
             }).join('')}
@@ -157,7 +157,7 @@ function renderQuestsPanel() {
         btn.addEventListener('click', () => {
             const result = YandexQuests.claim(btn.dataset.quest);
             if (result.success) {
-                showToast(`+${result.reward} ₽ за задание`);
+                showToast(`+${formatCurrency(result.reward)} за задание`);
                 YandexPlayer.saveToCloud();
                 renderQuestsPanel();
             }
@@ -186,7 +186,7 @@ async function renderLeaderboardPanel() {
                 <div class="lb-row ${e.isCurrentUser ? 'lb-me' : ''}">
                     <span class="lb-rank">${e.rank}</span>
                     <span class="lb-name">${escapeLeaderboardName(e.name)}</span>
-                    <span class="lb-score">${formatMoney(e.score)} ₽</span>
+                    <span class="lb-score">${formatCurrency(e.score)}</span>
                 </div>
             `).join('')}
         </div>
@@ -197,8 +197,8 @@ async function renderLeaderboardPanel() {
 function bindDepositToAds() {
     const btn = document.getElementById('btn-deposit');
     if (!btn) return;
-    btn.textContent = '🎬 +1000 ₽';
-    btn.title = 'Посмотри рекламу и получи 1000 ₽';
+    btn.textContent = '🎬 +1000 PC';
+    btn.title = 'Посмотри рекламу и получи 1000 PC';
     btn.replaceWith(btn.cloneNode(true));
     const newBtn = document.getElementById('btn-deposit');
     newBtn.addEventListener('click', async () => {
@@ -211,7 +211,7 @@ function bindDepositToAds() {
             balance += 1000;
             updateBalance();
             YandexPlayer.saveToCloud();
-            showToast('+1000 ₽ за просмотр рекламы 🎬');
+            showToast('+1000 PC за просмотр рекламы 🎬');
             newBtn.textContent = original;
         } else {
             newBtn.textContent = original;

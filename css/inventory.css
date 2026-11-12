@@ -124,15 +124,6 @@
     box-shadow: 0 8px 25px rgba(247,201,72,0.1);
 }
 
-.inv-item-rarity {
-    font-size: 10px;
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-    opacity: 0.8;
-}
-
 .inv-item-name {
     font-size: 13px;
     font-weight: 700;

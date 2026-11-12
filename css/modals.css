@@ -396,14 +396,6 @@
     color: var(--accent);
 }
 
-.skin-option-rarity {
-    font-size: 10px;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--text-dim);
-    margin-top: 4px;
-}
-
 /* ===== AUTH MODAL ===== */
 .auth-modal {
     max-width: 420px;

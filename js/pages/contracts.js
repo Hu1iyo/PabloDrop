@@ -55,13 +55,13 @@ function updateContractSummary(items = getContractInventory()) {
     const balanceContribution = getContractBalanceContribution();
     const effectiveTotal = total + balanceContribution;
     contractCount.textContent = `${selected.length} / ${CONTRACT_MAX_ITEMS}`;
-    contractTotal.textContent = `${formatMoney(total)} ₽`;
-    contractEffectiveTotal.textContent = `${formatMoney(effectiveTotal)} ₽`;
+    contractTotal.textContent = `≈ ${formatCurrency(total)}`;
+    contractEffectiveTotal.textContent = `≈ ${formatCurrency(effectiveTotal)}`;
     contractRange.textContent = effectiveTotal > 0
-        ? `${formatMoney(effectiveTotal * CONTRACT_MIN_VALUE_FACTOR)}–${formatMoney(effectiveTotal * CONTRACT_MAX_VALUE_FACTOR)} ₽`
+        ? `≈ ${formatCurrency(effectiveTotal * CONTRACT_MIN_VALUE_FACTOR)}–${formatCurrency(effectiveTotal * CONTRACT_MAX_VALUE_FACTOR)}`
         : '—';
     contractBalanceAmount.max = availableBalance;
-    contractBalanceAvailable.textContent = `${formatMoney(availableBalance)} ₽`;
+    contractBalanceAvailable.textContent = formatCurrency(availableBalance);
 
     const hasUnavailablePrice = selected.some(item => !isMarketPriceAvailable(item));
     const hasEnoughItems = selected.length >= CONTRACT_MIN_ITEMS && selected.length <= CONTRACT_MAX_ITEMS;
@@ -69,7 +69,7 @@ function updateContractSummary(items = getContractInventory()) {
     contractStatus.textContent = !hasEnoughItems
         ? `Добавьте ещё ${Math.max(0, CONTRACT_MIN_ITEMS - selected.length)} предмета`
         : hasUnavailablePrice
-            ? 'Для выбранных предметов нет актуальных цен'
+            ? 'Для выбранных предметов нет примерных цен'
             : !hasCandidates
                 ? 'Для этой суммы и цели нет доступной награды'
                 : 'Подпись подтвердит обмен предметов и указанного баланса';
@@ -87,7 +87,7 @@ function renderContracts() {
     contractSlots.innerHTML = Array.from({ length: CONTRACT_MAX_ITEMS }, (_, index) => {
         const item = selected[index];
         return item
-            ? `<button type="button" class="contract-slot-filled" data-remove-contract-id="${item.id}" aria-label="Убрать ${getDisplaySkinName(item.name)} из контракта">${skinImageMarkup(item, 'skin-art')}<span>${getDisplaySkinName(item.name)}</span><strong>${formatMoney(item.price)} ₽</strong><i aria-hidden="true">×</i></button>`
+            ? `<button type="button" class="contract-slot-filled" data-remove-contract-id="${item.id}" aria-label="Убрать ${getDisplaySkinName(item.name)} из контракта">${skinImageMarkup(item, 'skin-art')}<span>${getDisplaySkinName(item.name)}</span><strong>≈ ${formatCurrency(item.price)}</strong><i aria-hidden="true">×</i></button>`
             : `<div class="contract-slot-empty"><span>${index + 1}</span><b>+</b></div>`;
     }).join('');
     contractEmpty.style.display = items.length ? 'none' : 'block';
@@ -100,7 +100,7 @@ function renderContracts() {
                 aria-pressed="${selected}" ${!available || contractIsRunning ? 'disabled' : ''}>
                 ${skinImageMarkup(item, 'skin-art')}
                 <span class="contract-item-name">${getDisplaySkinName(item.name)}</span>
-                <span class="contract-item-price" ${!available && Number.isFinite(item.catalogPrice) && item.catalogPrice > 0 ? 'title="Ориентировочная цена по каталогу; рыночной котировки нет"' : ''}>${available ? `${formatMoney(item.price)} ₽` : Number.isFinite(item.catalogPrice) && item.catalogPrice > 0 ? `${formatMoney(item.catalogPrice)} ₽` : 'Нет цены'}</span>
+                <span class="contract-item-price" title="Примерная игровая цена">${available ? `≈ ${formatCurrency(item.price)}` : Number.isFinite(item.catalogPrice) && item.catalogPrice > 0 ? `≈ ${formatCurrency(item.catalogPrice)}` : 'Нет оценки'}</span>
             </button>
         `;
     }).join('');
@@ -156,7 +156,7 @@ function setupContractSignature() {
 }
 
 function renderContractResult(item) {
-    contractResult.innerHTML = `Контракт завершён: ${skinImageMarkup(item, 'skin-art contract-result-art')}<strong>${getDisplaySkinName(item.name)}</strong><span>${formatMoney(item.price)} ₽</span>`;
+    contractResult.innerHTML = `Контракт завершён: ${skinImageMarkup(item, 'skin-art contract-result-art')}<strong>${getDisplaySkinName(item.name)}</strong><span>≈ ${formatCurrency(item.price)}</span>`;
     contractResult.classList.add('visible');
 }
 

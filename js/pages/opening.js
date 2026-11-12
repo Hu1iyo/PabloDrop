@@ -6,11 +6,11 @@ let caseOpeningCompleted = false;
 function updateOpenButtonPrice() {
     if (!currentCase) return;
     const total = openingIsFree ? 0 : currentCase.price * openQuantity;
-    openPrice.textContent = openingIsFree ? 'БЕСПЛАТНО' : formatMoney(total) + ' ₽';
+    openPrice.textContent = openingIsFree ? 'БЕСПЛАТНО' : formatCurrency(total);
     openBtn.querySelector('span').textContent = openingIsFree ? 'Открыть' : 'Открыть за';
     const hasPricedDrops = currentCase.items.some(isMarketPriceAvailable);
     openBtn.disabled = isSpinning || !hasPricedDrops;
-    openBtn.title = hasPricedDrops ? '' : 'Открытие недоступно: нет свежих рыночных котировок';
+    openBtn.title = hasPricedDrops ? '' : 'Для предметов этого кейса нет примерных цен';
 }
 
 function refreshOpeningMarketPrices() {
@@ -45,7 +45,7 @@ function openCasePage(caseId, options = {}) {
     openingIsFree = options.free === true;
     casesScrollPosition = window.scrollY;
     caseTitle.textContent = currentCase.name;
-    casePrice.textContent = openingIsFree ? 'Ежедневный бесплатный кейс' : currentCase.price + ' ₽';
+    casePrice.textContent = openingIsFree ? 'Ежедневный бесплатный кейс' : formatCurrency(currentCase.price);
     caseEmoji.innerHTML = caseArtworkMarkup(currentCase, 'opening');
     openQuantity = 1;
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
@@ -113,7 +113,7 @@ openBtn.addEventListener('click', () => {
     if (pricedItems.length === 0) {
         resultsContainer.innerHTML = `
             <div class="result-box">
-                <div class="result-item" style="color:#ff4757;">Нет свежих котировок Skinport для предметов этого кейса.</div>
+                <div class="result-item" style="color:#ff4757;">Не удалось определить примерные цены предметов этого кейса.</div>
             </div>
         `;
         return;
@@ -219,6 +219,6 @@ openBtn.addEventListener('click', () => {
         if (typeof renderQuestsPanel === 'function') renderQuestsPanel();
         if (typeof renderLevelPanel === 'function') renderLevelPanel();
         caseOpeningCompleted = true;
-        console.log(`House profit: ${getHouseProfit().toFixed(2)} ₽ (открыто ${openQuantity} кейсов)`);
+        console.log(`House profit: ${getHouseProfit().toFixed(2)} PC (открыто ${openQuantity} кейсов)`);
     }, totalDuration);
 });

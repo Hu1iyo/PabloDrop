@@ -52,11 +52,11 @@ function updateUpgradeUI() {
                         </div>
                     `).join('')}
                 </div>
-                <div class="slot-selection-total">Итого: ${formatMoney(sourceTotal)} ₽</div>
+                <div class="slot-selection-total">Итого: ${formatCurrency(sourceTotal)}</div>
             </div>
         `;
         slotSource.classList.add('has-item');
-        infoSource.textContent = `${formatMoney(sourceTotal)} ₽ (${upgradeSourceItems.length} шт.)`;
+        infoSource.textContent = `${formatCurrency(sourceTotal)} (${upgradeSourceItems.length} шт.)`;
     }
 
     if (hasPricedSources && sourceTotal > 0) {
@@ -80,13 +80,12 @@ function updateUpgradeUI() {
             slotTargetContent.innerHTML = `
                 <div class="slot-item-display">
                     ${skinImageMarkup(upgradeTarget, 'skin-art slot-target-art')}
-                    <div class="slot-item-rarity" style="color: ${RARITY_COLORS[upgradeTarget.rarity]}">${RARITY_NAMES[upgradeTarget.rarity]}</div>
                     <div class="slot-item-name">${getDisplaySkinName(upgradeTarget.name)}</div>
                     ${marketPriceMarkup(upgradeTarget, 'slot-item-price')}
                 </div>
             `;
             slotTarget.classList.add('has-item');
-            infoTarget.textContent = `${getDisplaySkinName(upgradeTarget.name)} — ${formatMoney(upgradeTarget.price)} ₽`;
+            infoTarget.textContent = `${getDisplaySkinName(upgradeTarget.name)} — ${formatCurrency(upgradeTarget.price)}`;
         } else {
             upgradeChance = 0;
             slotTargetContent.innerHTML = `

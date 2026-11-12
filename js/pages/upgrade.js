@@ -62,7 +62,6 @@ function renderSkinSelectGrid(filter = '') {
                     ${skinImageMarkup(s, 'skin-art')}
                     <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
                     ${marketPriceMarkup(s, 'skin-option-price')}
-                    <div class="skin-option-rarity">${RARITY_NAMES[s.rarity]}</div>
                 </button>
             `;
         }
@@ -77,7 +76,6 @@ function renderSkinSelectGrid(filter = '') {
                 ${skinImageMarkup(marketSkin, 'skin-art')}
                 <div class="skin-option-name">${getDisplaySkinName(s.name)}</div>
                 ${marketPriceMarkup(marketSkin, 'skin-option-price')}
-                <div class="skin-option-rarity">${RARITY_NAMES[s.rarity]}</div>
                 </button>
         `;
     }).join('');
@@ -205,7 +203,7 @@ btnUpgrade.addEventListener('click', () => {
             });
             upgradeResult.style.display = 'block';
             upgradeResult.className = 'upgrade-result win';
-            upgradeResult.innerHTML = `🎉 УСПЕХ! Получен: <strong>${getDisplaySkinName(upgradeTarget.name)}</strong> (${upgradeTarget.price} ₽)`;
+            upgradeResult.innerHTML = `🎉 УСПЕХ! Получен: <strong>${getDisplaySkinName(upgradeTarget.name)}</strong> (${formatCurrency(upgradeTarget.price)})`;
             upgradeSourceItems = [];
         } else {
             upgradeResult.style.display = 'block';

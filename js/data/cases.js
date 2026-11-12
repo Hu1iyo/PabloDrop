@@ -1463,9 +1463,6 @@ const CASES = [
         { name: 'Moto Gloves | Boom!', price: 400, rarity: 'purple' },
         { name: 'Moto Gloves | Spearmint', price: 2800, rarity: 'red' },
         { name: 'Moto Gloves | POW!', price: 14000, rarity: 'gold' },
-        { name: 'Moto Gloves | Turtle', price: 2500, rarity: 'pink' },
-        { name: 'Moto Gloves | Smoke Out', price: 7500, rarity: 'red' },
-        { name: 'Moto Gloves | 3rd Commando', price: 14000, rarity: 'gold' }
     ]
 },
 {
@@ -1482,16 +1479,6 @@ const CASES = [
         { name: 'Driver Gloves | King Snake FN', price: 8500, rarity: 'gold' },
         { name: 'Driver Gloves | Diamondback FN', price: 12000, rarity: 'gold' },
         { name: 'Driver Gloves | Snow Leopard FN', price: 18000, rarity: 'gold' },
-        { name: 'Driver Gloves | Lunar Weave', price: 480, rarity: 'purple' },
-        { name: 'Driver Gloves | King Snake', price: 800, rarity: 'pink' },
-        { name: 'Driver Gloves | Diamondback', price: 6000, rarity: 'gold' },
-        { name: 'Driver Gloves | Snow Leopard', price: 3200, rarity: 'red' },
-        { name: 'Driver Gloves | Overtake', price: 1500, rarity: 'pink' },
-        { name: 'Driver Gloves | Racing Green', price: 2200, rarity: 'red' },
-        { name: 'Driver Gloves | Rezan the Red', price: 4500, rarity: 'red' },
-        { name: 'Driver Gloves | King Snake FN', price: 8500, rarity: 'gold' },
-        { name: 'Driver Gloves | Diamondback FN', price: 12000, rarity: 'gold' },
-        { name: 'Driver Gloves | Snow Leopard FN', price: 18000, rarity: 'gold' }
     ]
 },
 {
@@ -1511,13 +1498,7 @@ const CASES = [
         { name: 'Sport Gloves | Slingshot', price: 700, rarity: 'pink' },
         { name: 'Sport Gloves | Noct', price: 5500, rarity: 'gold' },
         { name: 'Sport Gloves | Pandora\'s Box', price: 1500, rarity: 'pink' },
-        { name: 'Sport Gloves | Hedge Maze', price: 7500, rarity: 'red' },
         { name: 'Sport Gloves | Superconductor', price: 9500, rarity: 'gold' },
-        { name: 'Sport Gloves | Marble Fade', price: 22000, rarity: 'gold' },
-        { name: 'Sport Gloves | Fade', price: 45000, rarity: 'gold' },
-        { name: 'Sport Gloves | Blue Acacia', price: 85000, rarity: 'gold' },
-        { name: 'Sport Gloves | Vice', price: 600, rarity: 'purple' },
-        { name: 'Sport Gloves | Amphibious', price: 950, rarity: 'purple' }
     ]
 },
 {
@@ -1534,16 +1515,6 @@ const CASES = [
         { name: 'Specialist Gloves | Fade FN', price: 8500, rarity: 'gold' },
         { name: 'Specialist Gloves | Crimson Web', price: 12000, rarity: 'gold' },
         { name: 'Specialist Gloves | Tiger Strike FN', price: 18000, rarity: 'gold' },
-        { name: 'Specialist Gloves | Fieldagent', price: 350, rarity: 'purple' },
-        { name: 'Specialist Gloves | Forest DDPAT', price: 550, rarity: 'purple' },
-        { name: 'Specialist Gloves | Fade', price: 4500, rarity: 'red' },
-        { name: 'Specialist Gloves | Emerald Web', price: 1800, rarity: 'red' },
-        { name: 'Specialist Gloves | Crimson Kimono', price: 22000, rarity: 'gold' },
-        { name: 'Specialist Gloves | Tiger Strike', price: 3500, rarity: 'red' },
-        { name: 'Specialist Gloves | Marshall', price: 5500, rarity: 'gold' },
-        { name: 'Specialist Gloves | Fade FN', price: 8500, rarity: 'gold' },
-        { name: 'Specialist Gloves | Crimson Web', price: 12000, rarity: 'gold' },
-        { name: 'Specialist Gloves | Tiger Strike FN', price: 18000, rarity: 'gold' }
     ]
 },
 {
@@ -1560,16 +1531,6 @@ const CASES = [
         { name: 'Hand Wraps | Slaughter FN', price: 7500, rarity: 'gold' },
         { name: 'Hand Wraps | Badlands FN', price: 12000, rarity: 'gold' },
         { name: 'Hand Wraps | Leather FN', price: 18000, rarity: 'gold' },
-        { name: 'Hand Wraps | Cobalt Skulls', price: 220, rarity: 'blue' },
-        { name: 'Hand Wraps | Slaughter', price: 450, rarity: 'purple' },
-        { name: 'Hand Wraps | Badlands', price: 800, rarity: 'pink' },
-        { name: 'Hand Wraps | Leather', price: 1200, rarity: 'pink' },
-        { name: 'Hand Wraps | Spruce DDPAT', price: 1800, rarity: 'red' },
-        { name: 'Hand Wraps | Duct Tape', price: 2500, rarity: 'red' },
-        { name: 'Hand Wraps | Cobalt Skulls FN', price: 4500, rarity: 'red' },
-        { name: 'Hand Wraps | Slaughter FN', price: 7500, rarity: 'gold' },
-        { name: 'Hand Wraps | Badlands FN', price: 12000, rarity: 'gold' },
-        { name: 'Hand Wraps | Leather FN', price: 18000, rarity: 'gold' }
     ]
 },
 {
@@ -1881,7 +1842,6 @@ const CASES = [
         { name: 'Desert Eagle | Naga', price: 180, rarity: 'blue' },
         { name: 'Desert Eagle | Urban DDPAT', price: 45, rarity: 'lightblue' },
         { name: 'Desert Eagle | Midnight Storm', price: 80, rarity: 'purple' },
-        { name: 'Desert Eagle | Sunset Storm', price: 60, rarity: 'lightblue' },
         { name: 'Desert Eagle | Rust Coat', price: 120, rarity: 'blue' },
         { name: 'Desert Eagle | Cobalt Disruption', price: 220, rarity: 'purple' },
         { name: 'Desert Eagle | Crimson Web', price: 350, rarity: 'purple' },
@@ -2068,7 +2028,6 @@ const CASES = [
         { name: 'P90 | Asiimov', price: 480, rarity: 'purple' },
         { name: 'MP7 | Nemesis', price: 850, rarity: 'pink' },
         { name: 'P90 | Death by Kitty', price: 1500, rarity: 'red' },
-        { name: 'MP7 | Special Delivery', price: 3500, rarity: 'gold' },
         { name: 'UMP-45 | Primal Saber', price: 250, rarity: 'purple' }
     ]
 },

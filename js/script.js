@@ -1,19 +1,12 @@
 // ===== ИНИЦИАЛИЗАЦИЯ =====
-applyCachedMarketData();
+applyCatalogPrices();
+try {
+	localStorage.removeItem('pabloSkinMarketCache');
+} catch (error) {
+	console.warn('Не удалось очистить устаревший кеш цен:', error);
+}
+refreshLocalSkinImages();
 updateAuthUI();
 renderShowcase();
 renderCases();
 updateBalance();
-
-async function refreshMarketViews() {
-	await refreshMarketData();
-	renderShowcase();
-	renderCases();
-	if (currentPage === 'inventory') renderInventory();
-	if (currentPage === 'upgrade') updateUpgradeUI();
-	if (currentPage === 'contracts') renderContracts();
-	if (currentCase) refreshOpeningMarketPrices();
-}
-
-refreshMarketViews();
-setInterval(refreshMarketViews, 5 * 60 * 1000);

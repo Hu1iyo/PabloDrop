@@ -6,11 +6,11 @@ function renderInventory() {
     invCountEl.textContent = inv.length;
     const total = pricedItems.reduce((sum, item) => sum + item.price, 0);
     invTotalEl.textContent = pricedItems.length
-        ? `${formatMoney(total)} ₽${pricedItems.length < inv.length ? '*' : ''}`
-        : 'Нет котировок';
+        ? `≈ ${formatCurrency(total)}${pricedItems.length < inv.length ? '*' : ''}`
+        : 'Нет оценки';
     invTotalEl.title = pricedItems.length < inv.length
-        ? `Рыночная стоимость рассчитана только для ${pricedItems.length} из ${inv.length} предметов`
-        : '';
+        ? `Примерная стоимость рассчитана для ${pricedItems.length} из ${inv.length} предметов`
+        : 'Сумма рассчитана по примерным игровым ценам';
 
     if (inv.length === 0) {
         inventoryGrid.style.display = 'none';
@@ -29,11 +29,10 @@ function renderInventory() {
 
     inventoryGrid.innerHTML = sorted.map(item => `
         <div class="inventory-item" data-id="${item.id}">
-            <div class="inv-item-rarity" style="color: ${RARITY_COLORS[item.rarity]}">${RARITY_NAMES[item.rarity]}</div>
             ${skinImageMarkup(item, 'skin-art')}
             <div class="inv-item-name">${getDisplaySkinName(item.name)}</div>
             ${marketPriceMarkup(item, 'inv-item-price')}
-            <button class="btn-sell" data-id="${item.id}" ${isMarketPriceAvailable(item) ? '' : 'disabled title="Нет свежей рыночной котировки"'}>💸 Продать</button>
+            <button class="btn-sell" data-id="${item.id}" ${isMarketPriceAvailable(item) ? '' : 'disabled title="Нет примерной цены"'}>💸 Продать</button>
         </div>
     `).join('');
 
@@ -55,7 +54,7 @@ sellAllBtn.addEventListener('click', () => {
     const inv = getInventory();
     const pricedItems = inv.map(getMarketSkin).filter(isMarketPriceAvailable);
     if (pricedItems.length === 0) return;
-    if (!confirm(`Продать ${pricedItems.length} предметов по актуальным рыночным ценам?`)) return;
+    if (!confirm(`Продать ${pricedItems.length} предметов по примерным игровым ценам?`)) return;
 
     const total = pricedItems.reduce((sum, item) => sum + item.price, 0);
     const soldIds = new Set(pricedItems.map(item => item.id));

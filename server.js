@@ -13,90 +13,13 @@ const PORT = Number(process.argv[2]) || Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 const USERS_FILE = path.join(ROOT, 'data', 'users.json');
 const SKIN_IMAGES_DIR = path.join(ROOT, 'data', 'skin-images');
-const SKIN_IMAGES_MANIFEST_FILE = path.join(ROOT, 'data', 'skin-images.json');
 const SKIN_IMAGE_MAP_FILE = path.join(ROOT, 'data', 'skin-image-map.json');
 const scrypt = promisify(crypto.scrypt);
 let registrationQueue = Promise.resolve();
-const SKINPORT_PRICES_URL = 'https://api.skinport.com/v1/items?app_id=730&currency=RUB';
-const SKIN_MARKET_CACHE_MS = 5 * 60 * 1000;
-const SKIN_IMAGE_CONTENT_TYPES = {
-    '.gif': 'image/gif',
-    '.jpg': 'image/jpeg',
-    '.png': 'image/png',
-    '.webp': 'image/webp',
-};
-let skinMarketCache = null;
-let skinMarketCacheExpiresAt = 0;
-let skinMarketRequest = null;
-let skinImageManifest = null;
-let skinImageManifestRequest = null;
 
-function isAllowedSkinImageUrl(value) {
-    try {
-        const url = new URL(value);
-        return url.protocol === 'https:' && url.hostname === 'community.akamai.steamstatic.com';
-    } catch {
-        return false;
-    }
-}
-
-function getSkinImageHash(sourceUrl) {
-    return crypto.createHash('sha256').update(sourceUrl).digest('hex');
-}
-
-async function loadSkinImageManifest() {
-    if (skinImageManifest) return skinImageManifest;
-    if (!skinImageManifestRequest) {
-        skinImageManifestRequest = fs.promises.readFile(SKIN_IMAGES_MANIFEST_FILE, 'utf8')
-            .then(contents => JSON.parse(contents))
-            .catch(error => {
-                if (error.code === 'ENOENT') return {};
-                throw error;
-            })
-            .then(manifest => {
-                if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
-                    throw new Error('Invalid skin image manifest');
-                }
-                skinImageManifest = manifest;
-                return skinImageManifest;
-            })
-            .finally(() => {
-                skinImageManifestRequest = null;
-            });
-    }
-    return skinImageManifestRequest;
-}
-
-async function findCachedSkinImage(hash, manifest) {
-    const entry = manifest[hash];
-    const candidates = [];
-    if (entry
-        && typeof entry.sourceUrl === 'string'
-        && isAllowedSkinImageUrl(entry.sourceUrl)
-        && getSkinImageHash(entry.sourceUrl) === hash
-        && typeof entry.fileName === 'string'
-        && new RegExp(`^${hash}\\.(gif|jpg|png|webp)$`).test(entry.fileName)) {
-        candidates.push(entry.fileName);
-    }
-    for (const extension of Object.keys(SKIN_IMAGE_CONTENT_TYPES)) {
-        candidates.push(`${hash}${extension}`);
-    }
-
-    for (const fileName of new Set(candidates)) {
-        const imagePath = path.join(SKIN_IMAGES_DIR, fileName);
-        try {
-            const stat = await fs.promises.stat(imagePath);
-            if (stat.isFile()) {
-                return {
-                    filePath: imagePath,
-                    contentType: SKIN_IMAGE_CONTENT_TYPES[path.extname(fileName)],
-                };
-            }
-        } catch (error) {
-            if (error.code !== 'ENOENT') throw error;
-        }
-    }
-    return null;
+function isSkinImageFile(fileName) {
+    const extension = path.extname(fileName).toLocaleLowerCase();
+    return extension === '.webp' || extension === '.png';
 }
 
 function normalizeSkinImageName(name) {
@@ -125,55 +48,33 @@ async function loadLocalSkinImageIndex() {
 
     const images = new Map();
     const weaponImages = new Map();
-    const availableFiles = new Set(files
-        .filter(file => file.isFile() && path.extname(file.name).toLocaleLowerCase() === '.png')
-        .map(file => file.name));
-
-    for (const [skinName, fileName] of Object.entries(skinImageMap)) {
-        if (typeof fileName !== 'string'
-            || path.basename(fileName) !== fileName
-            || path.extname(fileName).toLocaleLowerCase() !== '.png'
-            || !availableFiles.has(fileName)) continue;
+    const addImage = (skinName, fileName) => {
         const baseName = parseRequestedSkinName(skinName).baseName;
         const key = normalizeSkinImageName(baseName);
         if (key && !images.has(key)) images.set(key, fileName);
         const weaponKey = normalizeSkinImageName(baseName.split('|')[0].trim());
         if (weaponKey && !weaponImages.has(weaponKey)) weaponImages.set(weaponKey, fileName);
+    };
+    const availableFiles = new Set(files
+        .filter(file => file.isFile() && isSkinImageFile(file.name))
+        .map(file => file.name));
+
+    for (const [skinName, fileName] of Object.entries(skinImageMap)) {
+        if (typeof fileName !== 'string'
+            || path.basename(fileName) !== fileName
+            || !isSkinImageFile(fileName)
+            || !availableFiles.has(fileName)) continue;
+        addImage(skinName, fileName);
     }
 
     for (const file of files) {
-        if (!file.isFile() || path.extname(file.name).toLocaleLowerCase() !== '.png') continue;
+        if (!file.isFile() || !isSkinImageFile(file.name)) continue;
         const stem = path.basename(file.name, path.extname(file.name));
         if (/^[a-f0-9]{64}$/i.test(stem)) continue;
-        const baseName = parseRequestedSkinName(stem).baseName;
-        const key = normalizeSkinImageName(baseName);
-        if (key && !images.has(key)) images.set(key, file.name);
-        const weaponKey = normalizeSkinImageName(baseName.split('|')[0].trim());
-        if (weaponKey && !weaponImages.has(weaponKey)) weaponImages.set(weaponKey, file.name);
+        addImage(stem, file.name);
     }
 
     return { images, weaponImages };
-}
-
-function sendCachedSkinImage(res, filePath, contentType) {
-    fs.stat(filePath, (error, stat) => {
-        if (error || !stat.isFile()) {
-            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-            return res.end('Изображение не найдено');
-        }
-
-        res.writeHead(200, {
-            'Content-Type': contentType,
-            'Content-Length': stat.size,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-        });
-        const stream = fs.createReadStream(filePath);
-        stream.on('error', () => {
-            if (!res.headersSent) res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-            res.end('Ошибка чтения изображения');
-        });
-        stream.pipe(res);
-    });
 }
 
 async function handleLocalSkinImageRequest(req, res, encodedFileName) {
@@ -190,7 +91,7 @@ async function handleLocalSkinImageRequest(req, res, encodedFileName) {
         return;
     }
 
-    if (path.basename(fileName) !== fileName || path.extname(fileName).toLocaleLowerCase() !== '.png') {
+    if (path.basename(fileName) !== fileName || !isSkinImageFile(fileName)) {
         sendJson(res, 404, { error: 'Изображение не найдено' });
         return;
     }
@@ -203,7 +104,7 @@ async function handleLocalSkinImageRequest(req, res, encodedFileName) {
             return;
         }
         res.writeHead(200, {
-            'Content-Type': 'image/png',
+            'Content-Type': path.extname(fileName).toLocaleLowerCase() === '.webp' ? 'image/webp' : 'image/png',
             'Content-Length': stat.size,
             'Cache-Control': 'public, max-age=3600',
         });
@@ -228,37 +129,6 @@ async function handleLocalSkinImageRequest(req, res, encodedFileName) {
     }
 }
 
-async function handleSkinImageRequest(req, res, hash) {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        sendJson(res, 405, { error: 'Метод не поддерживается' });
-        return;
-    }
-
-    try {
-        const manifest = await loadSkinImageManifest();
-        const cachedImage = await findCachedSkinImage(hash, manifest);
-        if (!cachedImage) {
-            sendJson(res, 404, { error: 'Изображение не найдено в локальном кэше' });
-            return;
-        }
-
-        if (req.method === 'HEAD') {
-            const stat = await fs.promises.stat(cachedImage.filePath);
-            res.writeHead(200, {
-                'Content-Type': cachedImage.contentType,
-                'Content-Length': stat.size,
-                'Cache-Control': 'public, max-age=31536000, immutable',
-            });
-            res.end();
-            return;
-        }
-        sendCachedSkinImage(res, cachedImage.filePath, cachedImage.contentType);
-    } catch (error) {
-        console.error('Не удалось прочитать изображение скина из локального кэша:', error.message);
-        sendJson(res, 500, { error: 'Не удалось прочитать изображение скина из локального кэша' });
-    }
-}
-
 function parseRequestedSkinName(name) {
     const wearAliases = new Map([
         ['factory new', 'Factory New'],
@@ -277,6 +147,48 @@ function parseRequestedSkinName(name) {
     const wear = match ? wearAliases.get((match[1] || match[2]).toLocaleLowerCase()) : null;
     const baseName = match ? name.slice(0, match.index).trim() : name;
     return { baseName, wear };
+}
+
+function getLocalSkinImage(name, localImages, weaponImages) {
+    const { baseName } = parseRequestedSkinName(name);
+    const normalizedName = normalizeSkinImageName(baseName);
+    const exactImageFileName = localImages.get(normalizedName);
+    const weaponName = normalizeSkinImageName(baseName.split('|')[0].trim());
+    const imageFileName = exactImageFileName || weaponImages.get(weaponName);
+    return {
+        image: imageFileName ? `/api/skin-images/local/${encodeURIComponent(imageFileName)}` : null,
+        imageIsExact: Boolean(exactImageFileName),
+        imageSourceName: exactImageFileName ? name : baseName.split('|')[0].trim(),
+    };
+}
+
+async function handleLocalSkinImageMapRequest(req, res) {
+    if (req.method !== 'POST') {
+        sendJson(res, 405, { error: 'Метод не поддерживается' });
+        return;
+    }
+
+    try {
+        const body = await readRequestBody(req, 128 * 1024);
+        if (!body || !Array.isArray(body.names) || body.names.length > 1500) {
+            sendJson(res, 400, { error: 'Ожидается список не более чем из 1500 названий' });
+            return;
+        }
+
+        const names = [...new Set(body.names
+            .filter(name => typeof name === 'string')
+            .map(name => name.trim())
+            .filter(Boolean))];
+        const { images, weaponImages } = await loadLocalSkinImageIndex();
+        const items = Object.fromEntries(names.map(name => [
+            name,
+            getLocalSkinImage(name, images, weaponImages),
+        ]));
+        sendJson(res, 200, { items });
+    } catch (error) {
+        console.error('Не удалось загрузить локальную карту изображений скинов:', error.message);
+        sendJson(res, 500, { error: 'Не удалось загрузить локальную карту изображений скинов' });
+    }
 }
 
 async function readUsers() {
@@ -320,112 +232,6 @@ async function readRequestBody(req, maxBytes = 16 * 1024) {
         const error = new Error('Некорректный JSON');
         error.status = 400;
         throw error;
-    }
-}
-
-async function loadSkinMarketSources() {
-    const response = await fetch(SKINPORT_PRICES_URL, { signal: AbortSignal.timeout(30000) });
-    if (!response.ok) throw new Error(`Skinport returned ${response.status}`);
-    const prices = await response.json();
-    if (!Array.isArray(prices)) throw new Error('Skinport returned an invalid price list');
-
-    const pricesByName = new Map();
-    for (const listing of prices) {
-        if (typeof listing.market_hash_name !== 'string') continue;
-        const { baseName, wear } = parseRequestedSkinName(listing.market_hash_name);
-        if (!wear) continue;
-        const key = normalizeSkinImageName(baseName);
-        if (!pricesByName.has(key)) pricesByName.set(key, []);
-        pricesByName.get(key).push({ wear, listing });
-    }
-
-    return {
-        pricesByName,
-        pricesAvailable: prices.length > 0,
-        updatedAt: new Date().toISOString(),
-    };
-}
-
-async function getSkinMarketSources() {
-    if (skinMarketCache && Date.now() < skinMarketCacheExpiresAt) return skinMarketCache;
-    if (!skinMarketRequest) {
-        skinMarketRequest = loadSkinMarketSources()
-            .then(sources => {
-                skinMarketCache = sources;
-                skinMarketCacheExpiresAt = Date.now() + SKIN_MARKET_CACHE_MS;
-                return sources;
-            })
-            .finally(() => {
-                skinMarketRequest = null;
-            });
-    }
-    return skinMarketRequest;
-}
-
-async function handleSkinMarketRequest(req, res) {
-    if (req.method !== 'POST') {
-        sendJson(res, 405, { error: 'Метод не поддерживается' });
-        return;
-    }
-
-    try {
-        const body = await readRequestBody(req, 128 * 1024);
-        if (!body || !Array.isArray(body.names) || body.names.length > 800) {
-            sendJson(res, 400, { error: 'Ожидается список не более чем из 800 названий' });
-            return;
-        }
-
-        const names = [...new Set(body.names
-            .filter(name => typeof name === 'string')
-            .map(name => name.trim())
-            .filter(Boolean))];
-        const { images: localImages, weaponImages } = await loadLocalSkinImageIndex();
-        let pricesByName = new Map();
-        let pricesAvailable = false;
-        let updatedAt = new Date().toISOString();
-        try {
-            const prices = await getSkinMarketSources();
-            pricesByName = prices.pricesByName;
-            pricesAvailable = prices.pricesAvailable;
-            updatedAt = prices.updatedAt;
-        } catch (error) {
-            console.error('Не удалось загрузить цены Skinport; локальные изображения будут показаны без цен:', error.message);
-        }
-
-        const items = {};
-
-        for (const name of names) {
-            const { baseName, wear: requestedWear } = parseRequestedSkinName(name);
-            const normalizedName = normalizeSkinImageName(baseName);
-            const listings = pricesByName.get(normalizedName) || [];
-            const selected = (requestedWear
-                ? listings.find(option => option.wear === requestedWear)
-                : listings.find(option => option.wear === 'Field-Tested')
-                    || [...listings].sort((a, b) => (b.listing.quantity || 0) - (a.listing.quantity || 0))[0]);
-            const exactImageFileName = localImages.get(normalizedName);
-            const weaponName = normalizeSkinImageName(baseName.split('|')[0].trim());
-            const imageFileName = exactImageFileName || weaponImages.get(weaponName);
-
-            items[name] = {
-                image: imageFileName ? `/api/skin-images/local/${encodeURIComponent(imageFileName)}` : null,
-                imageIsExact: Boolean(exactImageFileName),
-                imageSourceName: exactImageFileName ? name : baseName.split('|')[0].trim(),
-                priceFeedAvailable: pricesAvailable,
-                marketName: selected?.listing.market_hash_name || null,
-                wear: selected?.wear || null,
-                price: selected?.listing.min_price ?? null,
-                currency: selected?.listing.currency || 'RUB',
-                marketUrl: selected?.listing.item_page || null,
-                priceUpdatedAt: selected?.listing.updated_at
-                    ? new Date(selected.listing.updated_at * 1000).toISOString()
-                    : null,
-            };
-        }
-
-        sendJson(res, 200, { items, pricesAvailable, updatedAt });
-    } catch (error) {
-        console.error('Не удалось загрузить рыночные данные скинов:', error.message);
-        sendJson(res, 503, { error: 'Не удалось загрузить рыночные данные скинов' });
     }
 }
 
@@ -536,14 +342,8 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-    if (req.url.split('?')[0] === '/api/market-data') {
-        handleSkinMarketRequest(req, res);
-        return;
-    }
-
-    const skinImageMatch = req.url.split('?')[0].match(/^\/api\/skin-images\/([a-f0-9]{64})$/);
-    if (skinImageMatch) {
-        handleSkinImageRequest(req, res, skinImageMatch[1]);
+    if (req.url.split('?')[0] === '/api/skin-images/map') {
+        handleLocalSkinImageMapRequest(req, res);
         return;
     }
 
@@ -570,14 +370,10 @@ const server = http.createServer((req, res) => {
     if (urlPath === '/') urlPath = '/index.html';
 
     const filePath = path.normalize(path.join(ROOT, urlPath));
+    // Папка data (пользователи, карты изображений) недоступна как статика
+    const dataDir = path.join(ROOT, 'data').toLowerCase();
     const normalizedFilePath = filePath.toLowerCase();
-    const normalizedUsersFile = USERS_FILE.toLowerCase();
-    const normalizedSkinImagesDir = SKIN_IMAGES_DIR.toLowerCase();
-    const normalizedSkinImagesManifest = SKIN_IMAGES_MANIFEST_FILE.toLowerCase();
-    if (normalizedFilePath === normalizedUsersFile
-        || normalizedFilePath.startsWith(`${normalizedUsersFile}.`)
-        || normalizedFilePath === normalizedSkinImagesManifest
-        || normalizedFilePath.startsWith(`${normalizedSkinImagesDir}${path.sep}`)) {
+    if (normalizedFilePath === dataDir || normalizedFilePath.startsWith(dataDir + path.sep)) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end('404 — Не найдено');
     }

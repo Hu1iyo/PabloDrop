@@ -24,7 +24,7 @@ function closeDepositModal() {
 
 function updateDepositTotal() {
     const total = selectedDepositAmount;
-    depositTotal.textContent = formatMoney(total) + ' ₽';
+    depositTotal.textContent = formatCurrency(total);
     depositConfirm.disabled = total <= 0 || isProcessingAd;
 }
 
@@ -74,5 +74,5 @@ depositConfirm.addEventListener('click', async () => {
         balanceEl.style.transform = '';
     }, 600);
 
-    showToast(`+${formatMoney(selectedDepositAmount)} ₽ за просмотр рекламы 🎬`);
+    showToast(`+${formatCurrency(selectedDepositAmount)} за просмотр рекламы 🎬`);
 });

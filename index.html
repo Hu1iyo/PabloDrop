@@ -9,7 +9,6 @@
     <link rel="icon" type="image/svg+xml" href="assets/icons/pablo-icon.svg">
     <link rel="manifest" href="site.webmanifest">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="css/yandex.css">
 </head>
 <body>
 
@@ -29,7 +28,7 @@
     <div class="balance-box" id="balance-box" style="display:none;">
         <span class="balance-icon">💰</span>
         <span class="balance-amount" id="balance">0.00</span>
-        <span class="balance-currency">₽</span>
+        <span class="balance-currency" title="PabloCoins">PC</span>
     </div>
     <button class="btn-deposit" id="btn-deposit" style="display:none;">🎬 Монеты</button>
     <div class="user-menu" id="user-menu">
@@ -114,7 +113,7 @@
                     </div>
                     <div class="inv-stat">
                         <span class="inv-stat-label">Общая стоимость:</span>
-                        <span class="inv-stat-value inv-stat-price" id="inv-total">0 ₽</span>
+                        <span class="inv-stat-value inv-stat-price" id="inv-total">0 PC</span>
                     </div>
                 </div>
             </div>
@@ -231,8 +230,8 @@
             </div>
             <div class="contracts-summary">
                 <span>Выбрано: <strong id="contract-count">0 / 10</strong></span>
-                <span>Сумма предметов: <strong id="contract-total">0 ₽</strong></span>
-                <span>С учётом баланса: <strong id="contract-effective-total">0 ₽</strong></span>
+                <span>Сумма предметов: <strong id="contract-total">0 PC</strong></span>
+                <span>С учётом баланса: <strong id="contract-effective-total">0 PC</strong></span>
                 <span>Награда: <strong id="contract-range">—</strong></span>
             </div>
             <div class="contract-slots-heading">Предметы контракта</div>
@@ -259,9 +258,9 @@
                     <label><input type="checkbox" id="contract-use-balance"> Добавить баланс</label>
                     <div class="contract-balance-input-wrap">
                         <input type="number" id="contract-balance-amount" min="0" step="1" value="0" disabled>
-                        <span>₽</span>
+                        <span>PC</span>
                     </div>
-                    <small>Доступно: <span id="contract-balance-available">0 ₽</span></small>
+                    <small>Доступно: <span id="contract-balance-available">0 PC</span></small>
                 </div>
                 <div class="contract-status" id="contract-status" aria-live="polite"></div>
             </div>
@@ -305,7 +304,7 @@
             <div class="modal-icon">💰</div>
             <h3 class="modal-title">Продать предмет?</h3>
             <div class="modal-item" id="modal-item"></div>
-            <div class="modal-price">Вы получите: <span id="modal-price"></span> ₽</div>
+            <div class="modal-price">Зачислим по примерной цене: ≈ <span id="modal-price"></span> PC</div>
             <div class="modal-actions">
                 <button class="btn-cancel" id="modal-cancel">Отмена</button>
                 <button class="btn-confirm" id="modal-confirm">Продать</button>
@@ -321,13 +320,13 @@
             <h3 class="modal-title">Получить монеты</h3>
             <p class="deposit-subtitle">Смотри рекламу и получай монеты бесплатно. Никаких реальных платежей.</p>
             <div class="deposit-amounts">
-                <button class="amount-btn active" data-amount="1000">🎬 +1 000 ₽</button>
-                <button class="amount-btn" data-amount="2500">🎬 +2 500 ₽</button>
-                <button class="amount-btn" data-amount="5000">🎬 +5 000 ₽</button>
+                <button class="amount-btn active" data-amount="1000">🎬 +1 000 PC</button>
+                <button class="amount-btn" data-amount="2500">🎬 +2 500 PC</button>
+                <button class="amount-btn" data-amount="5000">🎬 +5 000 PC</button>
             </div>
             <div class="deposit-total">
                 <span>Будет зачислено:</span>
-                <span class="deposit-total-value" id="deposit-total">1 000 ₽</span>
+                <span class="deposit-total-value" id="deposit-total">1 000 PC</span>
             </div>
             <button class="btn-confirm btn-deposit-confirm" id="deposit-confirm">Смотреть рекламу</button>
         </div>

@@ -166,7 +166,7 @@ function renderCases() {
                 ${caseArtworkMarkup(c)}
                 <div class="case-name">${c.name}</div>
                 <div class="case-items-count">${c.items.length} предметов</div>
-                <div class="case-price-tag">${c.price.toLocaleString('ru-RU')} ₽</div>
+                <div class="case-price-tag">${c.price.toLocaleString('ru-RU')} PC</div>
             `;
 
             card.addEventListener('click', () => openCasePage(c.id));
@@ -202,7 +202,7 @@ function renderCases() {
                 ${caseArtworkMarkup(c)}
                 <div class="case-name">${c.name}</div>
                 <div class="case-items-count">${c.items.length} предметов</div>
-                <div class="case-price-tag">${c.price.toLocaleString('ru-RU')} ₽</div>
+                <div class="case-price-tag">${c.price.toLocaleString('ru-RU')} PC</div>
             `;
 
             card.addEventListener('click', () => openCasePage(c.id));
